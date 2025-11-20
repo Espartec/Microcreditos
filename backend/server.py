@@ -528,6 +528,38 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
     
     return payment
 
+@api_router.get("/loans/{loan_id}/payment-status")
+async def get_loan_payment_status(loan_id: str):
+    """Obtiene el estado detallado de pagos de un préstamo"""
+    loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Préstamo no encontrado")
+    
+    # Obtener todos los pagos realizados
+    payments = await db.payments.find({"loan_id": loan_id}, {"_id": 0}).to_list(1000)
+    total_paid = sum(payment["amount"] for payment in payments)
+    
+    # Obtener cronograma actual
+    schedules = await db.payment_schedules.find({"loan_id": loan_id}, {"_id": 0}).sort("payment_number", 1).to_list(1000)
+    
+    # Calcular totales
+    original_total = loan["total_amount"]
+    pending_amount = sum(schedule["amount"] for schedule in schedules if schedule["status"] == PaymentStatus.PENDING)
+    paid_schedules = len([s for s in schedules if s["status"] == PaymentStatus.PAID])
+    total_schedules = len(schedules)
+    
+    return {
+        "loan_id": loan_id,
+        "original_total": original_total,
+        "total_paid": total_paid,
+        "pending_amount": pending_amount,
+        "paid_schedules": paid_schedules,
+        "total_schedules": total_schedules,
+        "completion_percentage": (paid_schedules / total_schedules * 100) if total_schedules > 0 else 0,
+        "is_completed": pending_amount == 0,
+        "payment_count": len(payments)
+    }
+
 @api_router.get("/payments", response_model=List[Payment])
 async def get_payments(loan_id: Optional[str] = None, client_id: Optional[str] = None):
     query = {}
