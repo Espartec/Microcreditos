@@ -210,8 +210,10 @@ async def register(user_data: UserCreate):
         email=user_data.email,
         name=user_data.name,
         role=user_data.role,
+        cedula=user_data.cedula,
         phone=user_data.phone,
-        address=user_data.address
+        address=user_data.address,
+        active=True
     )
     
     user_doc = user.model_dump()
