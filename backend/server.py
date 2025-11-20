@@ -57,8 +57,10 @@ class User(BaseModel):
     email: EmailStr
     name: str
     role: UserRole
+    cedula: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    active: bool = True
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class UserCreate(BaseModel):
@@ -66,6 +68,7 @@ class UserCreate(BaseModel):
     password: str
     name: str
     role: UserRole
+    cedula: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
 
