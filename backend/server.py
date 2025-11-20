@@ -383,52 +383,148 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
     # Get loan
     loan = await db.loans.find_one({"id": payment_data.loan_id}, {"_id": 0})
     if not loan:
-        raise HTTPException(status_code=404, detail="Loan not found")
+        raise HTTPException(status_code=404, detail="Préstamo no encontrado")
     
-    # Get next pending payment schedule
-    schedule = await db.payment_schedules.find_one(
+    if loan["status"] != LoanStatus.ACTIVE:
+        raise HTTPException(status_code=400, detail="Solo se pueden hacer pagos en préstamos activos")
+    
+    payment_amount = payment_data.amount
+    if payment_amount <= 0:
+        raise HTTPException(status_code=400, detail="El monto del pago debe ser mayor a cero")
+    
+    # Obtener todas las cuotas pendientes ordenadas por número
+    pending_schedules = await db.payment_schedules.find(
         {"loan_id": payment_data.loan_id, "status": PaymentStatus.PENDING},
-        {"_id": 0},
-        sort=[("payment_number", 1)]
-    )
+        {"_id": 0}
+    ).sort("payment_number", 1).to_list(1000)
     
-    if not schedule:
-        raise HTTPException(status_code=400, detail="No pending payments for this loan")
+    if not pending_schedules:
+        raise HTTPException(status_code=400, detail="Este préstamo ya está completamente pagado")
     
-    # Create payment
+    # Calcular saldo total pendiente
+    total_pending = sum(schedule["amount"] for schedule in pending_schedules)
+    
+    # Crear el registro de pago
     payment = Payment(
         loan_id=payment_data.loan_id,
         client_id=client_id,
-        amount=payment_data.amount,
-        payment_number=schedule["payment_number"],
-        notes=payment_data.notes
+        amount=payment_amount,
+        payment_number=pending_schedules[0]["payment_number"],  # Número de la primera cuota pendiente
+        notes=payment_data.notes or f"Pago procesado - Saldo pendiente antes: ${total_pending:.2f}"
     )
     
     payment_doc = payment.model_dump()
     payment_doc["payment_date"] = payment_doc["payment_date"].isoformat()
-    
     await db.payments.insert_one(payment_doc)
     
-    # Update schedule
-    await db.payment_schedules.update_one(
-        {"id": schedule["id"]},
-        {"$set": {
-            "status": PaymentStatus.PAID,
-            "paid_date": datetime.now(timezone.utc).isoformat()
-        }}
-    )
+    # Procesar el pago aplicándolo a las cuotas
+    remaining_payment = payment_amount
+    schedules_to_update = []
     
-    # Check if loan is completed
-    remaining = await db.payment_schedules.count_documents({
+    for schedule in pending_schedules:
+        if remaining_payment <= 0:
+            break
+            
+        schedule_amount = schedule["amount"]
+        
+        if remaining_payment >= schedule_amount:
+            # Pago completo de esta cuota
+            schedules_to_update.append({
+                "id": schedule["id"],
+                "status": PaymentStatus.PAID,
+                "amount_paid": schedule_amount,
+                "remaining_amount": 0
+            })
+            remaining_payment -= schedule_amount
+        else:
+            # Pago parcial de esta cuota
+            new_amount = schedule_amount - remaining_payment
+            schedules_to_update.append({
+                "id": schedule["id"],
+                "status": PaymentStatus.PENDING,
+                "amount_paid": remaining_payment,
+                "remaining_amount": new_amount,
+                "update_amount": True
+            })
+            remaining_payment = 0
+    
+    # Aplicar las actualizaciones a las cuotas
+    for update in schedules_to_update:
+        if update["status"] == PaymentStatus.PAID:
+            # Marcar cuota como pagada
+            await db.payment_schedules.update_one(
+                {"id": update["id"]},
+                {"$set": {
+                    "status": PaymentStatus.PAID,
+                    "paid_date": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+        else:
+            # Actualizar monto pendiente de la cuota
+            await db.payment_schedules.update_one(
+                {"id": update["id"]},
+                {"$set": {"amount": update["remaining_amount"]}}
+            )
+    
+    # Si hay excedente de pago, reducir la siguiente cuota pendiente
+    if remaining_payment > 0:
+        next_pending = await db.payment_schedules.find_one(
+            {"loan_id": payment_data.loan_id, "status": PaymentStatus.PENDING},
+            {"_id": 0},
+            sort=[("payment_number", 1)]
+        )
+        
+        if next_pending:
+            new_amount = max(0, next_pending["amount"] - remaining_payment)
+            await db.payment_schedules.update_one(
+                {"id": next_pending["id"]},
+                {"$set": {"amount": new_amount}}
+            )
+            
+            # Si la reducción hace que la cuota quede en 0, marcarla como pagada
+            if new_amount == 0:
+                await db.payment_schedules.update_one(
+                    {"id": next_pending["id"]},
+                    {"$set": {
+                        "status": PaymentStatus.PAID,
+                        "paid_date": datetime.now(timezone.utc).isoformat()
+                    }}
+                )
+    
+    # Verificar si el préstamo está completamente pagado
+    remaining_schedules = await db.payment_schedules.count_documents({
         "loan_id": payment_data.loan_id,
         "status": PaymentStatus.PENDING
     })
     
-    if remaining == 0:
+    # Verificar también si hay cuotas con monto > 0
+    schedules_with_amount = await db.payment_schedules.find({
+        "loan_id": payment_data.loan_id,
+        "status": PaymentStatus.PENDING,
+        "amount": {"$gt": 0}
+    }, {"_id": 0}).to_list(1)
+    
+    if remaining_schedules == 0 or not schedules_with_amount:
+        # Marcar todas las cuotas restantes como pagadas si tienen monto 0
+        await db.payment_schedules.update_many(
+            {
+                "loan_id": payment_data.loan_id,
+                "status": PaymentStatus.PENDING
+            },
+            {"$set": {
+                "status": PaymentStatus.PAID,
+                "paid_date": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Marcar préstamo como completado
         await db.loans.update_one(
             {"id": payment_data.loan_id},
             {"$set": {"status": LoanStatus.COMPLETED}}
         )
+    
+    # Agregar información del procesamiento al pago
+    payment.notes += f" | Restante después del pago: ${remaining_payment:.2f}"
     
     return payment
 
