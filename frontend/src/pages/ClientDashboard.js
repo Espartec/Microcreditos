@@ -18,9 +18,9 @@ export default function ClientDashboard({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [proposalsCount, setProposalsCount] = useState(0);
+  const [systemConfig, setSystemConfig] = useState(null);
   const [formData, setFormData] = useState({
     amount: "",
-    interest_rate: "",
     term_months: "",
     purpose: ""
   });
