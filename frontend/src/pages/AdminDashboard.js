@@ -497,6 +497,63 @@ export default function AdminDashboard({ user, onLogout }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Edit Rate Dialog */}
+      <Dialog open={editRateDialog} onOpenChange={setEditRateDialog}>
+        <DialogContent data-testid="edit-rate-dialog">
+          <DialogHeader>
+            <DialogTitle>Editar Tasa de Interés</DialogTitle>
+            <DialogDescription>
+              Modifica la tasa de interés de esta solicitud
+            </DialogDescription>
+          </DialogHeader>
+          {selectedLoan && systemConfig && (
+            <div className="space-y-4">
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-sm text-gray-600">Cliente: <span className="font-semibold">{selectedLoan.client_name}</span></p>
+                <p className="text-sm text-gray-600">Monto: <span className="font-semibold">${selectedLoan.amount.toLocaleString()}</span></p>
+                <p className="text-sm text-gray-600">Tasa Actual: <span className="font-semibold">{selectedLoan.interest_rate}%</span></p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label>Nueva Tasa de Interés (%)</Label>
+                <Select
+                  value={editRateData.new_rate}
+                  onValueChange={(value) => setEditRateData({ new_rate: value })}
+                >
+                  <SelectTrigger data-testid="edit-interest-rate-select">
+                    <SelectValue placeholder="Selecciona nueva tasa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {systemConfig.available_interest_rates.map((rate) => (
+                      <SelectItem key={rate} value={rate.toString()} data-testid={`edit-rate-option-${rate}`}>
+                        {rate}%
+                        {rate === systemConfig.default_interest_rate && " (Por defecto)"}
+                        {rate === selectedLoan.interest_rate && " (Actual)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-900">
+                  💡 <strong>Nota:</strong> Al cambiar la tasa aquí, se recalcularán automáticamente las cuotas mensuales y el total del préstamo.
+                </p>
+              </div>
+
+              <Button
+                onClick={handleSaveRateEdit}
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                data-testid="save-rate-btn"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Guardar Nueva Tasa
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
