@@ -494,18 +494,12 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
     # Verificar si el préstamo está completamente pagado
     remaining_schedules = await db.payment_schedules.count_documents({
         "loan_id": payment_data.loan_id,
-        "status": PaymentStatus.PENDING
-    })
-    
-    # Verificar también si hay cuotas con monto > 0
-    schedules_with_amount = await db.payment_schedules.find({
-        "loan_id": payment_data.loan_id,
         "status": PaymentStatus.PENDING,
         "amount": {"$gt": 0}
-    }, {"_id": 0}).to_list(1)
+    })
     
-    if remaining_schedules == 0 or not schedules_with_amount:
-        # Marcar todas las cuotas restantes como pagadas si tienen monto 0
+    if remaining_schedules == 0:
+        # Marcar todas las cuotas restantes como pagadas
         await db.payment_schedules.update_many(
             {
                 "loan_id": payment_data.loan_id,
