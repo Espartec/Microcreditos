@@ -30,19 +30,22 @@ export default function LoanDetail({ user, onLogout }) {
 
   const fetchData = async () => {
     try {
-      const [loanRes, schedulesRes, paymentsRes] = await Promise.all([
+      const [loanRes, schedulesRes, paymentsRes, paymentStatusRes] = await Promise.all([
         axios.get(`${API}/loans/${loanId}`),
         axios.get(`${API}/schedules?loan_id=${loanId}`),
-        axios.get(`${API}/payments?loan_id=${loanId}`)
+        axios.get(`${API}/payments?loan_id=${loanId}`),
+        axios.get(`${API}/loans/${loanId}/payment-status`)
       ]);
       setLoan(loanRes.data);
       setSchedules(schedulesRes.data);
       setPayments(paymentsRes.data);
       
-      // Set default payment amount to next pending payment
+      // Set default payment amount to next pending payment or remaining amount
       const nextPending = schedulesRes.data.find(s => s.status === "pending");
       if (nextPending) {
         setPaymentData({ ...paymentData, amount: nextPending.amount.toString() });
+      } else if (paymentStatusRes.data.pending_amount > 0) {
+        setPaymentData({ ...paymentData, amount: paymentStatusRes.data.pending_amount.toString() });
       }
     } catch (error) {
       toast.error("Error al cargar detalles del préstamo");
