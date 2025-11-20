@@ -115,14 +115,14 @@ class Payment(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     loan_id: str
     client_id: str
-    amount: float
+    amount: int
     payment_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     payment_number: int
     notes: Optional[str] = None
 
 class PaymentCreate(BaseModel):
     loan_id: str
-    amount: float
+    amount: int
     notes: Optional[str] = None
 
 class PaymentSchedule(BaseModel):
@@ -133,6 +133,7 @@ class PaymentSchedule(BaseModel):
     client_name: str
     payment_number: int
     due_date: datetime
+    amount: int
     amount: float
     status: PaymentStatus
     paid_date: Optional[datetime] = None
