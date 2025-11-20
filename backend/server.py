@@ -313,6 +313,10 @@ async def get_loans(client_id: Optional[str] = None, lender_id: Optional[str] = 
         for field in ["created_at", "approved_at", "start_date"]:
             if field in loan and loan[field] and isinstance(loan[field], str):
                 loan[field] = datetime.fromisoformat(loan[field])
+        # Convert float amounts to integers for existing data
+        for amount_field in ["amount", "monthly_payment", "total_amount"]:
+            if amount_field in loan and isinstance(loan[amount_field], float):
+                loan[amount_field] = round(loan[amount_field])
     return loans
 
 @api_router.get("/loans/{loan_id}", response_model=Loan)
@@ -323,6 +327,10 @@ async def get_loan(loan_id: str):
     for field in ["created_at", "approved_at", "start_date"]:
         if field in loan and loan[field] and isinstance(loan[field], str):
             loan[field] = datetime.fromisoformat(loan[field])
+    # Convert float amounts to integers for existing data
+    for amount_field in ["amount", "monthly_payment", "total_amount"]:
+        if amount_field in loan and isinstance(loan[amount_field], float):
+            loan[amount_field] = round(loan[amount_field])
     return Loan(**loan)
 
 @api_router.post("/loans/{loan_id}/approve")
