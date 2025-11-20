@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { DollarSign, TrendingUp, Clock, Users, LogOut, Calendar, CheckCircle, X, Settings, UserCog, LayoutDashboard } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, Users, LogOut, Calendar, CheckCircle, X, Settings, UserCog, LayoutDashboard, Edit } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
