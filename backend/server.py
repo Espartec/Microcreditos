@@ -528,7 +528,7 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
         )
     
     # Agregar información del procesamiento al pago
-    payment.notes += f" | Restante después del pago: ${remaining_payment:.2f}"
+    payment.notes += f" | Restante después del pago: ${remaining_payment}"
     
     return payment
 
