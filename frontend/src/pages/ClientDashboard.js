@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { DollarSign, TrendingUp, Clock, CheckCircle, LogOut, Calculator, FileText } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, CheckCircle, LogOut, Calculator, FileText, Bell } from "lucide-react";
 
 export default function ClientDashboard({ user, onLogout }) {
   const navigate = useNavigate();
