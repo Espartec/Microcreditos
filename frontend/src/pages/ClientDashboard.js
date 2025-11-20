@@ -17,6 +17,7 @@ export default function ClientDashboard({ user, onLogout }) {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [proposalsCount, setProposalsCount] = useState(0);
   const [formData, setFormData] = useState({
     amount: "",
     interest_rate: "",
@@ -30,12 +31,14 @@ export default function ClientDashboard({ user, onLogout }) {
 
   const fetchData = async () => {
     try {
-      const [statsRes, loansRes] = await Promise.all([
+      const [statsRes, loansRes, proposalsRes] = await Promise.all([
         axios.get(`${API}/stats/dashboard?user_id=${user.id}&role=${user.role}`),
-        axios.get(`${API}/loans?client_id=${user.id}`)
+        axios.get(`${API}/loans?client_id=${user.id}`),
+        axios.get(`${API}/proposals/count?client_id=${user.id}`)
       ]);
       setStats(statsRes.data);
       setLoans(loansRes.data);
+      setProposalsCount(proposalsRes.data.count);
     } catch (error) {
       toast.error("Error al cargar datos");
     } finally {
