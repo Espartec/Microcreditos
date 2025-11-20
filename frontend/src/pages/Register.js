@@ -16,7 +16,6 @@ export default function Register({ onLogin }) {
     email: "",
     password: "",
     name: "",
-    role: "",
     phone: "",
     address: ""
   });
