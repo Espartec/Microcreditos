@@ -107,6 +107,33 @@ function App() {
               )
             }
           />
+          
+          <Route
+            path="/users"
+            element={
+              user && user.role === "admin" ? (
+                <UserManagement user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          
+          <Route
+            path="/settings"
+            element={
+              user && user.role === "admin" ? (
+                <SystemSettings user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          
+          <Route
+            path="/proposals"
+            element={user ? <LoanProposals user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
