@@ -665,34 +665,6 @@ async def toggle_user_active(user_id: str):
     status_text = "activado" if new_status else "desactivado"
     return {"message": f"Usuario {status_text} exitosamente", "active": new_status}
 
-@api_router.put("/loans/{loan_id}/update-rate")
-async def update_loan_interest_rate(loan_id: str, new_rate: float):
-    # Verificar que el préstamo existe y está pendiente
-    loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
-    if not loan:
-        raise HTTPException(status_code=404, detail="Préstamo no encontrado")
-    
-    if loan["status"] != LoanStatus.PENDING:
-        raise HTTPException(status_code=400, detail="Solo se puede editar la tasa de préstamos pendientes")
-    
-    # Recalcular con la nueva tasa
-    calc = calculate_loan(loan["amount"], new_rate, loan["term_months"])
-    
-    # Actualizar el préstamo
-    result = await db.loans.update_one(
-        {"id": loan_id},
-        {"$set": {
-            "interest_rate": new_rate,
-            "monthly_payment": calc["monthly_payment"],
-            "total_amount": calc["total_amount"]
-        }}
-    )
-    
-    if result.matched_count == 0:
-        raise HTTPException(status_code=404, detail="Préstamo no encontrado")
-    
-    return {"message": "Tasa de interés actualizada exitosamente"}
-
 # Loan Proposal Routes
 @api_router.post("/loans/{loan_id}/propose")
 async def create_loan_proposal(loan_id: str, proposal_data: LoanProposalCreate):
