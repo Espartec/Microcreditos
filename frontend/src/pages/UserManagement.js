@@ -103,14 +103,23 @@ export default function UserManagement({ user, onLogout }) {
     }
   };
 
-  const handleToggleActive = async (userId, userName, currentStatus) => {
+  const handleViewClientLoans = () => {
+    setAlertDialog(false);
+    if (selectedUser && selectedUser.role === "lender") {
+      navigate(`/lender/${selectedUser.id}/clients`);
+    } else {
+      navigate(`/client/${selectedUser.id}`);
+    }
+  };
+
+  const handleToggleActive = async (userId, userName, currentStatus, userRole) => {
     // Si está activo, verificar préstamos antes de desactivar
     if (currentStatus) {
       try {
         const response = await axios.get(`${API}/users/${userId}/active-loans`);
         
         if (response.data.has_active_loans) {
-          setSelectedUser({ id: userId, name: userName });
+          setSelectedUser({ id: userId, name: userName, role: userRole });
           setActiveLoansInfo(response.data);
           setAlertDialog(true);
           return;
@@ -129,11 +138,6 @@ export default function UserManagement({ user, onLogout }) {
     } catch (error) {
       toast.error("Error al cambiar estado del usuario");
     }
-  };
-
-  const handleViewClientLoans = () => {
-    setAlertDialog(false);
-    navigate(`/client/${selectedUser.id}`);
   };
 
   const UserCard = ({ userData }) => {
