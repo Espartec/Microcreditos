@@ -98,23 +98,6 @@ export default function Register({ onLogin }) {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="role">Rol</Label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => setFormData({ ...formData, role: value })}
-                >
-                  <SelectTrigger className="rounded-lg" data-testid="register-role-select">
-                    <SelectValue placeholder="Selecciona tu rol" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="client" data-testid="role-client-option">Cliente</SelectItem>
-                    <SelectItem value="lender" data-testid="role-lender-option">Prestamista</SelectItem>
-                    <SelectItem value="admin" data-testid="role-admin-option">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono (Opcional)</Label>
                 <Input
                   id="phone"
