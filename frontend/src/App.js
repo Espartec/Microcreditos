@@ -81,7 +81,7 @@ function App() {
           
           <Route
             path="/calculator"
-            element={user ? <LoanCalculator user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+            element={<LoanCalculator user={user} onLogout={handleLogout} />}
           />
           
           <Route
