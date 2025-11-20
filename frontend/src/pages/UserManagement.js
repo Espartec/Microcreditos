@@ -384,11 +384,11 @@ export default function UserManagement({ user, onLogout }) {
             </div>
             <AlertDialogDescription className="space-y-3 pt-4">
               <p>
-                El usuario <strong>{selectedUser?.name}</strong> tiene{" "}
+                El {selectedUser?.role === "lender" ? "prestamista" : "usuario"} <strong>{selectedUser?.name}</strong> tiene{" "}
                 <strong>{activeLoansInfo?.active_loans_count}</strong> préstamo(s) activo(s) o pendiente(s).
               </p>
               <p>
-                ¿Deseas ver el perfil del cliente y sus préstamos antes de desactivar la cuenta?
+                ¿Deseas ver {selectedUser?.role === "lender" ? "los clientes asignados a este prestamista" : "el perfil del cliente y sus préstamos"} antes de desactivar la cuenta?
               </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -400,7 +400,7 @@ export default function UserManagement({ user, onLogout }) {
               data-testid="view-client-btn"
             >
               <Eye className="w-4 h-4 mr-2" />
-              Ver Perfil del Cliente
+              {selectedUser?.role === "lender" ? "Ver Clientes Asignados" : "Ver Perfil del Cliente"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
