@@ -109,35 +109,37 @@ export default function LoanCalculator({ user, onLogout }) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCalculate} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="amount">Monto del Préstamo</Label>
-                  <Input
-                    id="amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="10000"
-                    value={formData.amount}
-                    onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                    required
-                    data-testid="calc-amount-input"
-                  />
+              {loadingConfig ? (
+                <div className="py-8 text-center">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="interest_rate">Tasa de Interés Anual (%)</Label>
-                  <Input
-                    id="interest_rate"
-                    type="number"
-                    step="0.01"
-                    placeholder="12"
-                    value={formData.interest_rate}
-                    onChange={(e) => setFormData({ ...formData, interest_rate: e.target.value })}
-                    required
-                    data-testid="calc-interest-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="term_months">Plazo (meses)</Label>
+              ) : (
+                <form onSubmit={handleCalculate} className="space-y-4">
+                  {systemConfig && (
+                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-sm text-blue-900">
+                        <strong>Tasa de Interés:</strong> {systemConfig.default_interest_rate}% anual
+                      </p>
+                      <p className="text-xs text-blue-700 mt-1">
+                        Esta es la tasa estándar del sistema
+                      </p>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label htmlFor="amount">Monto del Préstamo</Label>
+                    <Input
+                      id="amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="10000"
+                      value={formData.amount}
+                      onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                      required
+                      data-testid="calc-amount-input"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="term_months">Plazo (meses)</Label>
                   <Input
                     id="term_months"
                     type="number"
