@@ -15,6 +15,7 @@ export default function Register({ onLogin }) {
     email: "",
     password: "",
     name: "",
+    cedula: "",
     phone: "",
     address: ""
   });
