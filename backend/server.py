@@ -420,7 +420,7 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
         client_id=client_id,
         amount=payment_amount,
         payment_number=pending_schedules[0]["payment_number"],  # Número de la primera cuota pendiente
-        notes=payment_data.notes or f"Pago procesado - Saldo pendiente antes: ${total_pending:.2f}"
+        notes=payment_data.notes or f"Pago procesado - Saldo pendiente antes: ${total_pending}"
     )
     
     payment_doc = payment.model_dump()
