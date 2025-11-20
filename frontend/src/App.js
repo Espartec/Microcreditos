@@ -136,6 +136,17 @@ function App() {
             path="/proposals"
             element={user ? <LoanProposals user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
           />
+          
+          <Route
+            path="/lender/:lenderId/clients"
+            element={
+              user && user.role === "admin" ? (
+                <LenderClientsPage user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
