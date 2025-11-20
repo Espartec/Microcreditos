@@ -631,28 +631,39 @@ async def update_user_password(user_id: str, password_update: PasswordUpdate):
     
     return {"message": "Contraseña actualizada exitosamente"}
 
-@api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str):
+@api_router.get("/users/{user_id}/active-loans")
+async def check_user_active_loans(user_id: str):
     # Verificar si el usuario tiene préstamos activos
-    active_loans = await db.loans.count_documents({
+    active_loans_count = await db.loans.count_documents({
         "$or": [
             {"client_id": user_id, "status": {"$in": [LoanStatus.ACTIVE, LoanStatus.PENDING]}},
             {"lender_id": user_id, "status": LoanStatus.ACTIVE}
         ]
     })
     
-    if active_loans > 0:
-        raise HTTPException(
-            status_code=400,
-            detail="No se puede eliminar el usuario porque tiene préstamos activos o pendientes"
-        )
-    
-    result = await db.users.delete_one({"id": user_id})
-    
-    if result.deleted_count == 0:
+    return {
+        "has_active_loans": active_loans_count > 0,
+        "active_loans_count": active_loans_count
+    }
+
+@api_router.put("/users/{user_id}/toggle-active")
+async def toggle_user_active(user_id: str):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
     
-    return {"message": "Usuario eliminado exitosamente"}
+    new_status = not user.get("active", True)
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"active": new_status}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    status_text = "activado" if new_status else "desactivado"
+    return {"message": f"Usuario {status_text} exitosamente", "active": new_status}
 
 # Loan Proposal Routes
 @api_router.post("/loans/{loan_id}/propose")
