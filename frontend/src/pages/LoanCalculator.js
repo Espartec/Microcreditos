@@ -140,25 +140,25 @@ export default function LoanCalculator({ user, onLogout }) {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="term_months">Plazo (meses)</Label>
-                  <Input
-                    id="term_months"
-                    type="number"
-                    placeholder="12"
-                    value={formData.term_months}
-                    onChange={(e) => setFormData({ ...formData, term_months: e.target.value })}
-                    required
-                    data-testid="calc-term-input"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  disabled={loading || !systemConfig}
-                  data-testid="calculate-btn"
-                >
-                  {loading ? "Calculando..." : "Calcular"}
-                </Button>
-              </form>
+                    <Input
+                      id="term_months"
+                      type="number"
+                      placeholder="12"
+                      value={formData.term_months}
+                      onChange={(e) => setFormData({ ...formData, term_months: e.target.value })}
+                      required
+                      data-testid="calc-term-input"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    disabled={loading || !systemConfig}
+                    data-testid="calculate-btn"
+                  >
+                    {loading ? "Calculando..." : "Calcular"}
+                  </Button>
+                </form>
               )}
             </CardContent>
           </Card>
