@@ -43,7 +43,7 @@ export default function LoanCalculator({ user, onLogout }) {
     try {
       const response = await axios.post(`${API}/loans/calculate`, {
         amount: parseFloat(formData.amount),
-        interest_rate: parseFloat(formData.interest_rate),
+        interest_rate: systemConfig.default_interest_rate,
         term_months: parseInt(formData.term_months)
       });
       setResult(response.data);
