@@ -90,6 +90,21 @@ export default function ClientDashboard({ user, onLogout }) {
               <Calculator className="w-4 h-4 mr-2" />
               Calculadora
             </Button>
+            {proposalsCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/proposals")}
+                className="relative bg-amber-50 text-amber-700 hover:bg-amber-100"
+                data-testid="nav-proposals-btn"
+              >
+                <Bell className="w-4 h-4 mr-2" />
+                Propuestas
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {proposalsCount}
+                </span>
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
