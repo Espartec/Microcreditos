@@ -23,15 +23,12 @@ export default function Register({ onLogin }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.role) {
-      toast.error("Por favor selecciona un rol");
-      return;
-    }
-
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API}/auth/register`, formData);
+      // Todos los registros son clientes por defecto
+      const registerData = { ...formData, role: "client" };
+      const response = await axios.post(`${API}/auth/register`, registerData);
       onLogin(response.data.access_token, response.data.user);
       toast.success("¡Cuenta creada exitosamente!");
       navigate("/dashboard");
