@@ -51,13 +51,19 @@ export default function ClientDashboard({ user, onLogout }) {
   const handleCreateLoan = async (e) => {
     e.preventDefault();
     try {
+      // Usar la tasa de interés por defecto del sistema
+      const loanData = {
+        ...formData,
+        interest_rate: systemConfig.default_interest_rate
+      };
+      
       await axios.post(
         `${API}/loans?client_id=${user.id}&client_name=${encodeURIComponent(user.name)}`,
-        formData
+        loanData
       );
       toast.success("Solicitud de préstamo creada exitosamente");
       setDialogOpen(false);
-      setFormData({ amount: "", interest_rate: "", term_months: "", purpose: "" });
+      setFormData({ amount: "", term_months: "", purpose: "" });
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Error al crear solicitud");
