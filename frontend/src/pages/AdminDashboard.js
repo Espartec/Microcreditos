@@ -106,6 +106,30 @@ export default function AdminDashboard({ user, onLogout }) {
     }
   };
 
+  const handleEditRate = (loan) => {
+    setSelectedLoan(loan);
+    setEditRateData({ new_rate: loan.interest_rate.toString() });
+    setEditRateDialog(true);
+  };
+
+  const handleSaveRateEdit = async () => {
+    if (!editRateData.new_rate || parseFloat(editRateData.new_rate) <= 0) {
+      toast.error("Ingresa una tasa válida");
+      return;
+    }
+
+    try {
+      await axios.put(`${API}/loans/${selectedLoan.id}/update-rate?new_rate=${parseFloat(editRateData.new_rate)}`);
+      toast.success("Tasa de interés actualizada exitosamente");
+      setEditRateDialog(false);
+      setSelectedLoan(null);
+      setEditRateData({ new_rate: "" });
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Error al actualizar tasa");
+    }
+  };
+
   const handleRejectLoan = async (loanId) => {
     if (!window.confirm("¿Estás seguro de rechazar este préstamo?")) {
       return;
