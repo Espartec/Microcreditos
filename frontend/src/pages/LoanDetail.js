@@ -201,6 +201,17 @@ export default function LoanDetail({ user, onLogout }) {
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handlePayment} className="space-y-4">
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-900">
+                      💡 <strong>Información sobre pagos:</strong>
+                    </p>
+                    <ul className="text-xs text-blue-800 mt-1 list-disc ml-4 space-y-1">
+                      <li>Puedes pagar el monto exacto, menor o mayor a la cuota</li>
+                      <li>Los excedentes se aplicarán a futuras cuotas</li>
+                      <li>Los pagos parciales actualizarán el cronograma automáticamente</li>
+                      <li>Puedes pagar la totalidad del préstamo en una sola cuota</li>
+                    </ul>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="amount">Monto</Label>
                     <Input
