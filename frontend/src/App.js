@@ -1,52 +1,112 @@
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import axios from "axios";
+import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
+import Landing from "@/pages/Landing";
+import Login from "@/pages/Login";
+import Register from "@/pages/Register";
+import ClientDashboard from "@/pages/ClientDashboard";
+import LenderDashboard from "@/pages/LenderDashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
+import LoanCalculator from "@/pages/LoanCalculator";
+import ClientProfile from "@/pages/ClientProfile";
+import LoanDetail from "@/pages/LoanDetail";
+import CollectionModule from "@/pages/CollectionModule";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const Home = () => {
-  const helloWorldApi = async () => {
-    try {
-      const response = await axios.get(`${API}/`);
-      console.log(response.data.message);
-    } catch (e) {
-      console.error(e, `errored out requesting / api`);
-    }
-  };
-
-  useEffect(() => {
-    helloWorldApi();
-  }, []);
-
-  return (
-    <div>
-      <header className="App-header">
-        <a
-          className="App-link"
-          href="https://emergent.sh"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <img src="https://avatars.githubusercontent.com/in/1201222?s=120&u=2686cf91179bbafbc7a71bfbc43004cf9ae1acea&v=4" />
-        </a>
-        <p className="mt-5">Building something incredible ~!</p>
-      </header>
-    </div>
-  );
-};
+export { API };
 
 function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
+    if (token && userData) {
+      setUser(JSON.parse(userData));
+    }
+    setLoading(false);
+  }, []);
+
+  const handleLogin = (token, userData) => {
+    localStorage.setItem("token", token);
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setUser(null);
+    toast.success("Sesión cerrada exitosamente");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="App">
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Home />}>
-            <Route index element={<Home />} />
-          </Route>
+          <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Landing />} />
+          <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login onLogin={handleLogin} />} />
+          <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register onLogin={handleLogin} />} />
+          
+          <Route
+            path="/dashboard"
+            element={
+              user ? (
+                user.role === "client" ? (
+                  <ClientDashboard user={user} onLogout={handleLogout} />
+                ) : user.role === "lender" ? (
+                  <LenderDashboard user={user} onLogout={handleLogout} />
+                ) : (
+                  <AdminDashboard user={user} onLogout={handleLogout} />
+                )
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+          
+          <Route
+            path="/calculator"
+            element={user ? <LoanCalculator user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          />
+          
+          <Route
+            path="/client/:clientId"
+            element={user ? <ClientProfile user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          />
+          
+          <Route
+            path="/loan/:loanId"
+            element={user ? <LoanDetail user={user} onLogout={handleLogout} /> : <Navigate to="/login" />}
+          />
+          
+          <Route
+            path="/collections"
+            element={
+              user && (user.role === "admin" || user.role === "lender") ? (
+                <CollectionModule user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
+      <Toaster position="top-right" richColors />
     </div>
   );
 }

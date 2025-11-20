@@ -1,15 +1,17 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, status
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
+from pydantic import BaseModel, Field, ConfigDict, EmailStr
+from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
-
+from datetime import datetime, timezone, timedelta
+import bcrypt
+import jwt
+from enum import Enum
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -19,54 +21,536 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Create the main app without a prefix
-app = FastAPI()
+# JWT Configuration
+SECRET_KEY = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 
-# Create a router with the /api prefix
+# Create the main app
+app = FastAPI()
 api_router = APIRouter(prefix="/api")
 
+# Enums
+class UserRole(str, Enum):
+    CLIENT = "client"
+    LENDER = "lender"
+    ADMIN = "admin"
 
-# Define Models
-class StatusCheck(BaseModel):
-    model_config = ConfigDict(extra="ignore")  # Ignore MongoDB's _id field
-    
+class LoanStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    DEFAULTED = "defaulted"
+
+class PaymentStatus(str, Enum):
+    PENDING = "pending"
+    PAID = "paid"
+    LATE = "late"
+    OVERDUE = "overdue"
+
+# Models
+class User(BaseModel):
+    model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: EmailStr
+    name: str
+    role: UserRole
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    name: str
+    role: UserRole
+    phone: Optional[str] = None
+    address: Optional[str] = None
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user: User
+
+class Loan(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    client_id: str
     client_name: str
-    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    lender_id: Optional[str] = None
+    lender_name: Optional[str] = None
+    amount: float
+    interest_rate: float  # percentage
+    term_months: int
+    monthly_payment: float
+    total_amount: float
+    status: LoanStatus
+    purpose: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    approved_at: Optional[datetime] = None
+    start_date: Optional[datetime] = None
 
-class StatusCheckCreate(BaseModel):
+class LoanCreate(BaseModel):
+    amount: float
+    interest_rate: float
+    term_months: int
+    purpose: Optional[str] = None
+
+class LoanApproval(BaseModel):
+    loan_id: str
+    lender_id: str
+    start_date: datetime
+
+class Payment(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    loan_id: str
+    client_id: str
+    amount: float
+    payment_date: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    payment_number: int
+    notes: Optional[str] = None
+
+class PaymentCreate(BaseModel):
+    loan_id: str
+    amount: float
+    notes: Optional[str] = None
+
+class PaymentSchedule(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    loan_id: str
+    client_id: str
     client_name: str
+    payment_number: int
+    due_date: datetime
+    amount: float
+    status: PaymentStatus
+    paid_date: Optional[datetime] = None
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+class PaymentScheduleUpdate(BaseModel):
+    due_date: datetime
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.model_dump()
-    status_obj = StatusCheck(**status_dict)
-    
-    # Convert to dict and serialize datetime to ISO string for MongoDB
-    doc = status_obj.model_dump()
-    doc['timestamp'] = doc['timestamp'].isoformat()
-    
-    _ = await db.status_checks.insert_one(doc)
-    return status_obj
+class LoanCalculation(BaseModel):
+    amount: float
+    interest_rate: float
+    term_months: int
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    # Exclude MongoDB's _id field from the query results
-    status_checks = await db.status_checks.find({}, {"_id": 0}).to_list(1000)
-    
-    # Convert ISO string timestamps back to datetime objects
-    for check in status_checks:
-        if isinstance(check['timestamp'], str):
-            check['timestamp'] = datetime.fromisoformat(check['timestamp'])
-    
-    return status_checks
+class LoanCalculationResult(BaseModel):
+    monthly_payment: float
+    total_amount: float
+    total_interest: float
+    schedule: List[dict]
 
-# Include the router in the main app
+# Helper Functions
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
+
+def create_token(user_id: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode = {"sub": user_id, "exp": expire}
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def calculate_loan(amount: float, interest_rate: float, term_months: int) -> dict:
+    monthly_rate = interest_rate / 100 / 12
+    if monthly_rate == 0:
+        monthly_payment = amount / term_months
+    else:
+        monthly_payment = amount * (monthly_rate * (1 + monthly_rate)**term_months) / ((1 + monthly_rate)**term_months - 1)
+    
+    total_amount = monthly_payment * term_months
+    total_interest = total_amount - amount
+    
+    schedule = []
+    balance = amount
+    for i in range(1, term_months + 1):
+        interest_payment = balance * monthly_rate
+        principal_payment = monthly_payment - interest_payment
+        balance -= principal_payment
+        schedule.append({
+            "payment_number": i,
+            "payment": round(monthly_payment, 2),
+            "principal": round(principal_payment, 2),
+            "interest": round(interest_payment, 2),
+            "balance": round(max(balance, 0), 2)
+        })
+    
+    return {
+        "monthly_payment": round(monthly_payment, 2),
+        "total_amount": round(total_amount, 2),
+        "total_interest": round(total_interest, 2),
+        "schedule": schedule
+    }
+
+# Auth Routes
+@api_router.post("/auth/register", response_model=Token)
+async def register(user_data: UserCreate):
+    # Check if user exists
+    existing = await db.users.find_one({"email": user_data.email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    # Hash password
+    hashed_password = hash_password(user_data.password)
+    
+    # Create user
+    user = User(
+        email=user_data.email,
+        name=user_data.name,
+        role=user_data.role,
+        phone=user_data.phone,
+        address=user_data.address
+    )
+    
+    user_doc = user.model_dump()
+    user_doc["password"] = hashed_password
+    user_doc["created_at"] = user_doc["created_at"].isoformat()
+    
+    await db.users.insert_one(user_doc)
+    
+    # Create token
+    token = create_token(user.id)
+    
+    return Token(access_token=token, token_type="bearer", user=user)
+
+@api_router.post("/auth/login", response_model=Token)
+async def login(credentials: UserLogin):
+    user_doc = await db.users.find_one({"email": credentials.email}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    if not verify_password(credentials.password, user_doc["password"]):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Convert datetime
+    if isinstance(user_doc["created_at"], str):
+        user_doc["created_at"] = datetime.fromisoformat(user_doc["created_at"])
+    
+    user = User(**{k: v for k, v in user_doc.items() if k != "password"})
+    token = create_token(user.id)
+    
+    return Token(access_token=token, token_type="bearer", user=user)
+
+# User Routes
+@api_router.get("/users", response_model=List[User])
+async def get_users(role: Optional[str] = None):
+    query = {}
+    if role:
+        query["role"] = role
+    
+    users = await db.users.find(query, {"_id": 0, "password": 0}).to_list(1000)
+    for user in users:
+        if isinstance(user["created_at"], str):
+            user["created_at"] = datetime.fromisoformat(user["created_at"])
+    return users
+
+@api_router.get("/users/{user_id}", response_model=User)
+async def get_user(user_id: str):
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if isinstance(user["created_at"], str):
+        user["created_at"] = datetime.fromisoformat(user["created_at"])
+    return User(**user)
+
+# Loan Routes
+@api_router.post("/loans/calculate", response_model=LoanCalculationResult)
+async def calculate_loan_route(data: LoanCalculation):
+    result = calculate_loan(data.amount, data.interest_rate, data.term_months)
+    return LoanCalculationResult(**result)
+
+@api_router.post("/loans", response_model=Loan)
+async def create_loan(loan_data: LoanCreate, client_id: str, client_name: str):
+    # Calculate loan details
+    calc = calculate_loan(loan_data.amount, loan_data.interest_rate, loan_data.term_months)
+    
+    loan = Loan(
+        client_id=client_id,
+        client_name=client_name,
+        amount=loan_data.amount,
+        interest_rate=loan_data.interest_rate,
+        term_months=loan_data.term_months,
+        monthly_payment=calc["monthly_payment"],
+        total_amount=calc["total_amount"],
+        status=LoanStatus.PENDING,
+        purpose=loan_data.purpose
+    )
+    
+    loan_doc = loan.model_dump()
+    loan_doc["created_at"] = loan_doc["created_at"].isoformat()
+    
+    await db.loans.insert_one(loan_doc)
+    return loan
+
+@api_router.get("/loans", response_model=List[Loan])
+async def get_loans(client_id: Optional[str] = None, lender_id: Optional[str] = None, status: Optional[str] = None):
+    query = {}
+    if client_id:
+        query["client_id"] = client_id
+    if lender_id:
+        query["lender_id"] = lender_id
+    if status:
+        query["status"] = status
+    
+    loans = await db.loans.find(query, {"_id": 0}).to_list(1000)
+    for loan in loans:
+        for field in ["created_at", "approved_at", "start_date"]:
+            if field in loan and loan[field] and isinstance(loan[field], str):
+                loan[field] = datetime.fromisoformat(loan[field])
+    return loans
+
+@api_router.get("/loans/{loan_id}", response_model=Loan)
+async def get_loan(loan_id: str):
+    loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    for field in ["created_at", "approved_at", "start_date"]:
+        if field in loan and loan[field] and isinstance(loan[field], str):
+            loan[field] = datetime.fromisoformat(loan[field])
+    return Loan(**loan)
+
+@api_router.post("/loans/{loan_id}/approve")
+async def approve_loan(loan_id: str, approval: LoanApproval):
+    loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    
+    # Get lender info
+    lender = await db.users.find_one({"id": approval.lender_id}, {"_id": 0})
+    if not lender:
+        raise HTTPException(status_code=404, detail="Lender not found")
+    
+    # Update loan
+    await db.loans.update_one(
+        {"id": loan_id},
+        {"$set": {
+            "status": LoanStatus.ACTIVE,
+            "lender_id": approval.lender_id,
+            "lender_name": lender["name"],
+            "approved_at": datetime.now(timezone.utc).isoformat(),
+            "start_date": approval.start_date.isoformat()
+        }}
+    )
+    
+    # Create payment schedule
+    if isinstance(loan["created_at"], str):
+        loan["created_at"] = datetime.fromisoformat(loan["created_at"])
+    
+    for i in range(1, loan["term_months"] + 1):
+        due_date = approval.start_date + timedelta(days=30 * i)
+        schedule = PaymentSchedule(
+            loan_id=loan_id,
+            client_id=loan["client_id"],
+            client_name=loan["client_name"],
+            payment_number=i,
+            due_date=due_date,
+            amount=loan["monthly_payment"],
+            status=PaymentStatus.PENDING
+        )
+        schedule_doc = schedule.model_dump()
+        schedule_doc["due_date"] = schedule_doc["due_date"].isoformat()
+        await db.payment_schedules.insert_one(schedule_doc)
+    
+    return {"message": "Loan approved successfully"}
+
+@api_router.post("/loans/{loan_id}/reject")
+async def reject_loan(loan_id: str):
+    result = await db.loans.update_one(
+        {"id": loan_id},
+        {"$set": {"status": LoanStatus.REJECTED}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    return {"message": "Loan rejected"}
+
+# Payment Routes
+@api_router.post("/payments", response_model=Payment)
+async def create_payment(payment_data: PaymentCreate, client_id: str):
+    # Get loan
+    loan = await db.loans.find_one({"id": payment_data.loan_id}, {"_id": 0})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    
+    # Get next pending payment schedule
+    schedule = await db.payment_schedules.find_one(
+        {"loan_id": payment_data.loan_id, "status": PaymentStatus.PENDING},
+        {"_id": 0},
+        sort=[("payment_number", 1)]
+    )
+    
+    if not schedule:
+        raise HTTPException(status_code=400, detail="No pending payments for this loan")
+    
+    # Create payment
+    payment = Payment(
+        loan_id=payment_data.loan_id,
+        client_id=client_id,
+        amount=payment_data.amount,
+        payment_number=schedule["payment_number"],
+        notes=payment_data.notes
+    )
+    
+    payment_doc = payment.model_dump()
+    payment_doc["payment_date"] = payment_doc["payment_date"].isoformat()
+    
+    await db.payments.insert_one(payment_doc)
+    
+    # Update schedule
+    await db.payment_schedules.update_one(
+        {"id": schedule["id"]},
+        {"$set": {
+            "status": PaymentStatus.PAID,
+            "paid_date": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Check if loan is completed
+    remaining = await db.payment_schedules.count_documents({
+        "loan_id": payment_data.loan_id,
+        "status": PaymentStatus.PENDING
+    })
+    
+    if remaining == 0:
+        await db.loans.update_one(
+            {"id": payment_data.loan_id},
+            {"$set": {"status": LoanStatus.COMPLETED}}
+        )
+    
+    return payment
+
+@api_router.get("/payments", response_model=List[Payment])
+async def get_payments(loan_id: Optional[str] = None, client_id: Optional[str] = None):
+    query = {}
+    if loan_id:
+        query["loan_id"] = loan_id
+    if client_id:
+        query["client_id"] = client_id
+    
+    payments = await db.payments.find(query, {"_id": 0}).to_list(1000)
+    for payment in payments:
+        if isinstance(payment["payment_date"], str):
+            payment["payment_date"] = datetime.fromisoformat(payment["payment_date"])
+    return payments
+
+# Payment Schedule Routes
+@api_router.get("/schedules", response_model=List[PaymentSchedule])
+async def get_schedules(loan_id: Optional[str] = None, client_id: Optional[str] = None, status: Optional[str] = None):
+    query = {}
+    if loan_id:
+        query["loan_id"] = loan_id
+    if client_id:
+        query["client_id"] = client_id
+    if status:
+        query["status"] = status
+    
+    schedules = await db.payment_schedules.find(query, {"_id": 0}).to_list(1000)
+    for schedule in schedules:
+        for field in ["due_date", "paid_date"]:
+            if field in schedule and schedule[field] and isinstance(schedule[field], str):
+                schedule[field] = datetime.fromisoformat(schedule[field])
+    return schedules
+
+@api_router.get("/schedules/today", response_model=List[PaymentSchedule])
+async def get_today_schedules():
+    today = datetime.now(timezone.utc).date()
+    tomorrow = today + timedelta(days=1)
+    
+    schedules = await db.payment_schedules.find({"status": PaymentStatus.PENDING}, {"_id": 0}).to_list(1000)
+    
+    result = []
+    for schedule in schedules:
+        if isinstance(schedule["due_date"], str):
+            schedule["due_date"] = datetime.fromisoformat(schedule["due_date"])
+        
+        schedule_date = schedule["due_date"].date()
+        if schedule_date == today:
+            result.append(schedule)
+    
+    return result
+
+@api_router.put("/schedules/{schedule_id}/update-date")
+async def update_schedule_date(schedule_id: str, update: PaymentScheduleUpdate):
+    result = await db.payment_schedules.update_one(
+        {"id": schedule_id},
+        {"$set": {"due_date": update.due_date.isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return {"message": "Schedule updated successfully"}
+
+# Dashboard Stats
+@api_router.get("/stats/dashboard")
+async def get_dashboard_stats(user_id: str, role: str):
+    stats = {}
+    
+    if role == UserRole.CLIENT:
+        # Client stats
+        active_loans = await db.loans.count_documents({"client_id": user_id, "status": LoanStatus.ACTIVE})
+        pending_loans = await db.loans.count_documents({"client_id": user_id, "status": LoanStatus.PENDING})
+        completed_loans = await db.loans.count_documents({"client_id": user_id, "status": LoanStatus.COMPLETED})
+        
+        # Total debt
+        loans = await db.loans.find({"client_id": user_id, "status": LoanStatus.ACTIVE}, {"_id": 0}).to_list(1000)
+        total_debt = sum(loan["total_amount"] for loan in loans)
+        
+        # Paid amount
+        payments = await db.payments.find({"client_id": user_id}, {"_id": 0}).to_list(1000)
+        total_paid = sum(payment["amount"] for payment in payments)
+        
+        stats = {
+            "active_loans": active_loans,
+            "pending_loans": pending_loans,
+            "completed_loans": completed_loans,
+            "total_debt": round(total_debt, 2),
+            "total_paid": round(total_paid, 2),
+            "remaining": round(total_debt - total_paid, 2)
+        }
+    
+    elif role == UserRole.LENDER:
+        # Lender stats
+        active_loans = await db.loans.count_documents({"lender_id": user_id, "status": LoanStatus.ACTIVE})
+        completed_loans = await db.loans.count_documents({"lender_id": user_id, "status": LoanStatus.COMPLETED})
+        
+        loans = await db.loans.find({"lender_id": user_id}, {"_id": 0}).to_list(1000)
+        total_lent = sum(loan["amount"] for loan in loans)
+        total_expected = sum(loan["total_amount"] for loan in loans if loan["status"] in [LoanStatus.ACTIVE, LoanStatus.COMPLETED])
+        
+        stats = {
+            "active_loans": active_loans,
+            "completed_loans": completed_loans,
+            "total_lent": round(total_lent, 2),
+            "total_expected": round(total_expected, 2)
+        }
+    
+    else:  # Admin
+        total_loans = await db.loans.count_documents({})
+        pending_loans = await db.loans.count_documents({"status": LoanStatus.PENDING})
+        active_loans = await db.loans.count_documents({"status": LoanStatus.ACTIVE})
+        total_users = await db.users.count_documents({})
+        
+        all_loans = await db.loans.find({}, {"_id": 0}).to_list(10000)
+        total_volume = sum(loan["amount"] for loan in all_loans)
+        
+        stats = {
+            "total_loans": total_loans,
+            "pending_loans": pending_loans,
+            "active_loans": active_loans,
+            "total_users": total_users,
+            "total_volume": round(total_volume, 2)
+        }
+    
+    return stats
+
+# Include router
 app.include_router(api_router)
 
 app.add_middleware(
@@ -77,7 +561,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
