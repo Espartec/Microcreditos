@@ -98,6 +98,18 @@ export default function Register({ onLogin }) {
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="cedula">Número de Cédula</Label>
+                <Input
+                  id="cedula"
+                  placeholder="1234567890"
+                  value={formData.cedula}
+                  onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
+                  data-testid="register-cedula-input"
+                  className="rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono (Opcional)</Label>
                 <Input
                   id="phone"
