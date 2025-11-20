@@ -30,8 +30,10 @@ class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     role: Optional[str] = None
+    cedula: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
+    active: Optional[bool] = None
 
 class PasswordUpdate(BaseModel):
     new_password: str
