@@ -31,14 +31,16 @@ export default function ClientDashboard({ user, onLogout }) {
 
   const fetchData = async () => {
     try {
-      const [statsRes, loansRes, proposalsRes] = await Promise.all([
+      const [statsRes, loansRes, proposalsRes, configRes] = await Promise.all([
         axios.get(`${API}/stats/dashboard?user_id=${user.id}&role=${user.role}`),
         axios.get(`${API}/loans?client_id=${user.id}`),
-        axios.get(`${API}/proposals/count?client_id=${user.id}`)
+        axios.get(`${API}/proposals/count?client_id=${user.id}`),
+        axios.get(`${API}/config/system`)
       ]);
       setStats(statsRes.data);
       setLoans(loansRes.data);
       setProposalsCount(proposalsRes.data.count);
+      setSystemConfig(configRes.data);
     } catch (error) {
       toast.error("Error al cargar datos");
     } finally {
