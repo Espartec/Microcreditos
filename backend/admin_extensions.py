@@ -48,10 +48,10 @@ class LoanProposal(BaseModel):
     lender_name: str
     original_interest_rate: float
     proposed_interest_rate: float
-    original_monthly_payment: float
-    proposed_monthly_payment: float
-    original_total_amount: float
-    proposed_total_amount: float
+    original_monthly_payment: int
+    proposed_monthly_payment: int
+    original_total_amount: int
+    proposed_total_amount: int
     reason: Optional[str] = None
     status: ProposalStatus
     created_at: datetime
