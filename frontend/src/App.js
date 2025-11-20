@@ -14,6 +14,9 @@ import LoanCalculator from "@/pages/LoanCalculator";
 import ClientProfile from "@/pages/ClientProfile";
 import LoanDetail from "@/pages/LoanDetail";
 import CollectionModule from "@/pages/CollectionModule";
+import UserManagement from "@/pages/UserManagement";
+import SystemSettings from "@/pages/SystemSettings";
+import LoanProposals from "@/pages/LoanProposals";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
