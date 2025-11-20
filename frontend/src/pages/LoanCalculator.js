@@ -18,6 +18,7 @@ export default function LoanCalculator({ user, onLogout }) {
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const isAuthenticated = !!user;
 
   const handleCalculate = async (e) => {
     e.preventDefault();
