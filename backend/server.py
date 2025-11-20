@@ -532,6 +532,55 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
     
     return payment
 
+@api_router.post("/admin/fix-completed-loans")
+async def fix_completed_loans(admin_id: str):
+    """Corrige préstamos que deberían estar completados pero tienen cuotas con monto 0"""
+    
+    # Buscar todas las cuotas pendientes con monto 0
+    schedules_with_zero = await db.payment_schedules.find({
+        "status": PaymentStatus.PENDING,
+        "amount": 0
+    }, {"_id": 0}).to_list(1000)
+    
+    loans_to_fix = set()
+    
+    # Marcar cuotas con monto 0 como pagadas
+    for schedule in schedules_with_zero:
+        await db.payment_schedules.update_one(
+            {"id": schedule["id"]},
+            {"$set": {
+                "status": PaymentStatus.PAID,
+                "paid_date": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        loans_to_fix.add(schedule["loan_id"])
+    
+    # Verificar cada préstamo afectado
+    completed_loans = []
+    
+    for loan_id in loans_to_fix:
+        # Verificar si todas las cuotas están pagadas
+        remaining_schedules = await db.payment_schedules.count_documents({
+            "loan_id": loan_id,
+            "status": PaymentStatus.PENDING,
+            "amount": {"$gt": 0}
+        })
+        
+        if remaining_schedules == 0:
+            # Marcar préstamo como completado
+            await db.loans.update_one(
+                {"id": loan_id},
+                {"$set": {"status": LoanStatus.COMPLETED}}
+            )
+            completed_loans.append(loan_id)
+    
+    return {
+        "message": f"Corrección completada",
+        "schedules_fixed": len(schedules_with_zero),
+        "loans_completed": len(completed_loans),
+        "completed_loan_ids": completed_loans
+    }
+
 @api_router.get("/loans/{loan_id}/payment-status")
 async def get_loan_payment_status(loan_id: str):
     """Obtiene el estado detallado de pagos de un préstamo"""
