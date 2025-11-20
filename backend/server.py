@@ -163,13 +163,15 @@ def create_token(user_id: str) -> str:
     to_encode = {"sub": user_id, "exp": expire}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def calculate_loan(amount: float, interest_rate: float, term_months: int) -> dict:
+def calculate_loan(amount: int, interest_rate: float, term_months: int) -> dict:
     monthly_rate = interest_rate / 100 / 12
     if monthly_rate == 0:
         monthly_payment = amount / term_months
     else:
         monthly_payment = amount * (monthly_rate * (1 + monthly_rate)**term_months) / ((1 + monthly_rate)**term_months - 1)
     
+    # Redondear a enteros
+    monthly_payment = round(monthly_payment)
     total_amount = monthly_payment * term_months
     total_interest = total_amount - amount
     
@@ -181,16 +183,16 @@ def calculate_loan(amount: float, interest_rate: float, term_months: int) -> dic
         balance -= principal_payment
         schedule.append({
             "payment_number": i,
-            "payment": round(monthly_payment, 2),
-            "principal": round(principal_payment, 2),
-            "interest": round(interest_payment, 2),
-            "balance": round(max(balance, 0), 2)
+            "payment": monthly_payment,
+            "principal": round(principal_payment),
+            "interest": round(interest_payment),
+            "balance": round(max(balance, 0))
         })
     
     return {
-        "monthly_payment": round(monthly_payment, 2),
-        "total_amount": round(total_amount, 2),
-        "total_interest": round(total_interest, 2),
+        "monthly_payment": monthly_payment,
+        "total_amount": total_amount,
+        "total_interest": total_interest,
         "schedule": schedule
     }
 
