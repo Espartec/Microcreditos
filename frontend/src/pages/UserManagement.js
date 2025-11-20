@@ -4,25 +4,32 @@ import axios from "axios";
 import { API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ArrowLeft, Users, Edit, Trash2, Shield } from "lucide-react";
+import { ArrowLeft, Users, Edit, Power, Shield, Search, AlertTriangle, Eye } from "lucide-react";
 
 export default function UserManagement({ user, onLogout }) {
   const navigate = useNavigate();
   const [clients, setClients] = useState([]);
   const [lenders, setLenders] = useState([]);
+  const [filteredClients, setFilteredClients] = useState([]);
+  const [filteredLenders, setFilteredLenders] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [editDialog, setEditDialog] = useState(false);
+  const [alertDialog, setAlertDialog] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [activeLoansInfo, setActiveLoansInfo] = useState(null);
   const [editData, setEditData] = useState({
     name: "",
     email: "",
     role: "",
+    cedula: "",
     phone: "",
     address: ""
   });
@@ -30,6 +37,10 @@ export default function UserManagement({ user, onLogout }) {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    filterUsers();
+  }, [searchTerm, clients, lenders]);
 
   const fetchUsers = async () => {
     try {
@@ -46,12 +57,34 @@ export default function UserManagement({ user, onLogout }) {
     }
   };
 
+  const filterUsers = () => {
+    const term = searchTerm.toLowerCase();
+    
+    const filtClients = clients.filter(c => 
+      c.name.toLowerCase().includes(term) ||
+      c.email.toLowerCase().includes(term) ||
+      (c.cedula && c.cedula.includes(term)) ||
+      (c.phone && c.phone.includes(term))
+    );
+    
+    const filtLenders = lenders.filter(l => 
+      l.name.toLowerCase().includes(term) ||
+      l.email.toLowerCase().includes(term) ||
+      (l.cedula && l.cedula.includes(term)) ||
+      (l.phone && l.phone.includes(term))
+    );
+    
+    setFilteredClients(filtClients);
+    setFilteredLenders(filtLenders);
+  };
+
   const handleEdit = (userData) => {
     setSelectedUser(userData);
     setEditData({
       name: userData.name,
       email: userData.email,
       role: userData.role,
+      cedula: userData.cedula || "",
       phone: userData.phone || "",
       address: userData.address || ""
     });
@@ -70,65 +103,102 @@ export default function UserManagement({ user, onLogout }) {
     }
   };
 
-  const handleDelete = async (userId, userName) => {
-    if (!window.confirm(`¿Estás seguro de eliminar al usuario ${userName}?`)) {
-      return;
+  const handleToggleActive = async (userId, userName, currentStatus) => {
+    // Si está activo, verificar préstamos antes de desactivar
+    if (currentStatus) {
+      try {
+        const response = await axios.get(`${API}/users/${userId}/active-loans`);
+        
+        if (response.data.has_active_loans) {
+          setSelectedUser({ id: userId, name: userName });
+          setActiveLoansInfo(response.data);
+          setAlertDialog(true);
+          return;
+        }
+      } catch (error) {
+        toast.error("Error al verificar préstamos");
+        return;
+      }
     }
 
+    // Si no hay préstamos activos o está reactivando, proceder
     try {
-      await axios.delete(`${API}/users/${userId}`);
-      toast.success("Usuario eliminado exitosamente");
+      const response = await axios.put(`${API}/users/${userId}/toggle-active`);
+      toast.success(response.data.message);
       fetchUsers();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Error al eliminar usuario");
+      toast.error("Error al cambiar estado del usuario");
     }
   };
 
-  const UserCard = ({ userData }) => (
-    <Card className="hover:shadow-md transition-shadow" data-testid={`user-card-${userData.id}`}>
-      <CardHeader>
-        <div className="flex justify-between items-start">
-          <div>
-            <CardTitle className="text-lg">{userData.name}</CardTitle>
-            <CardDescription>{userData.email}</CardDescription>
+  const handleViewClientLoans = () => {
+    setAlertDialog(false);
+    navigate(`/client/${selectedUser.id}`);
+  };
+
+  const UserCard = ({ userData }) => {
+    const isActive = userData.active !== false;
+    
+    return (
+      <Card 
+        className={`hover:shadow-md transition-shadow ${
+          !isActive ? 'opacity-60 border-red-200 bg-red-50/30' : ''
+        }`}
+        data-testid={`user-card-${userData.id}`}
+      >
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <div className="flex items-center space-x-2">
+                <CardTitle className="text-lg">{userData.name}</CardTitle>
+                {!isActive && (
+                  <span className="status-badge bg-red-100 text-red-700 text-xs">Inactivo</span>
+                )}
+              </div>
+              <CardDescription>{userData.email}</CardDescription>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleEdit(userData)}
+                data-testid={`edit-user-${userData.id}`}
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant={isActive ? "destructive" : "default"}
+                className={!isActive ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                onClick={() => handleToggleActive(userData.id, userData.name, isActive)}
+                data-testid={`toggle-user-${userData.id}`}
+              >
+                <Power className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-          <div className="flex space-x-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => handleEdit(userData)}
-              data-testid={`edit-user-${userData.id}`}
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handleDelete(userData.id, userData.name)}
-              data-testid={`delete-user-${userData.id}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-sm">
+            {userData.cedula && (
+              <p className="text-gray-600">🆔 Cédula: {userData.cedula}</p>
+            )}
+            {userData.phone && (
+              <p className="text-gray-600">📞 {userData.phone}</p>
+            )}
+            {userData.address && (
+              <p className="text-gray-600">📍 {userData.address}</p>
+            )}
+            <div className="pt-2">
+              <span className={`status-badge ${userData.role === 'client' ? 'status-pending' : 'status-active'}`}>
+                {userData.role === 'client' ? 'Cliente' : 'Prestamista'}
+              </span>
+            </div>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2 text-sm">
-          {userData.phone && (
-            <p className="text-gray-600">📞 {userData.phone}</p>
-          )}
-          {userData.address && (
-            <p className="text-gray-600">📍 {userData.address}</p>
-          )}
-          <div className="pt-2">
-            <span className={`status-badge ${userData.role === 'client' ? 'status-pending' : 'status-active'}`}>
-              {userData.role === 'client' ? 'Cliente' : 'Prestamista'}
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
@@ -162,26 +232,41 @@ export default function UserManagement({ user, onLogout }) {
       </header>
 
       <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Search Bar */}
+        <div className="mb-6">
+          <div className="relative max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <Input
+              type="text"
+              placeholder="Buscar por nombre, email, cédula o teléfono..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-lg"
+              data-testid="search-input"
+            />
+          </div>
+        </div>
+
         <Tabs defaultValue="clients" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
             <TabsTrigger value="clients" data-testid="clients-tab">
-              Clientes ({clients.length})
+              Clientes ({filteredClients.length})
             </TabsTrigger>
             <TabsTrigger value="lenders" data-testid="lenders-tab">
-              Prestamistas ({lenders.length})
+              Prestamistas ({filteredLenders.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="clients" className="space-y-4">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {clients.map((client) => (
+              {filteredClients.map((client) => (
                 <UserCard key={client.id} userData={client} />
               ))}
             </div>
-            {clients.length === 0 && (
+            {filteredClients.length === 0 && (
               <Card>
                 <CardContent className="py-12 text-center text-gray-500">
-                  No hay clientes registrados
+                  {searchTerm ? "No se encontraron clientes con ese criterio" : "No hay clientes registrados"}
                 </CardContent>
               </Card>
             )}
@@ -189,14 +274,14 @@ export default function UserManagement({ user, onLogout }) {
 
           <TabsContent value="lenders" className="space-y-4">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {lenders.map((lender) => (
+              {filteredLenders.map((lender) => (
                 <UserCard key={lender.id} userData={lender} />
               ))}
             </div>
-            {lenders.length === 0 && (
+            {filteredLenders.length === 0 && (
               <Card>
                 <CardContent className="py-12 text-center text-gray-500">
-                  No hay prestamistas registrados
+                  {searchTerm ? "No se encontraron prestamistas con ese criterio" : "No hay prestamistas registrados"}
                 </CardContent>
               </Card>
             )}
@@ -249,6 +334,14 @@ export default function UserManagement({ user, onLogout }) {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Número de Cédula</Label>
+                <Input
+                  value={editData.cedula}
+                  onChange={(e) => setEditData({ ...editData, cedula: e.target.value })}
+                  data-testid="edit-cedula-input"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label>Teléfono</Label>
                 <Input
                   value={editData.phone}
@@ -276,6 +369,38 @@ export default function UserManagement({ user, onLogout }) {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Active Loans Alert Dialog */}
+      <AlertDialog open={alertDialog} onOpenChange={setAlertDialog}>
+        <AlertDialogContent data-testid="active-loans-alert">
+          <AlertDialogHeader>
+            <div className="flex items-center space-x-2 text-amber-600">
+              <AlertTriangle className="w-6 h-6" />
+              <AlertDialogTitle>Usuario con Préstamos Activos</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="space-y-3 pt-4">
+              <p>
+                El usuario <strong>{selectedUser?.name}</strong> tiene{" "}
+                <strong>{activeLoansInfo?.active_loans_count}</strong> préstamo(s) activo(s) o pendiente(s).
+              </p>
+              <p>
+                ¿Deseas ver el perfil del cliente y sus préstamos antes de desactivar la cuenta?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="cancel-alert-btn">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleViewClientLoans}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="view-client-btn"
+            >
+              <Eye className="w-4 h-4 mr-2" />
+              Ver Perfil del Cliente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
