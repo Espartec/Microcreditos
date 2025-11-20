@@ -576,6 +576,9 @@ async def get_payments(loan_id: Optional[str] = None, client_id: Optional[str] =
     for payment in payments:
         if isinstance(payment["payment_date"], str):
             payment["payment_date"] = datetime.fromisoformat(payment["payment_date"])
+        # Convert float amounts to integers for existing data
+        if "amount" in payment and isinstance(payment["amount"], float):
+            payment["amount"] = round(payment["amount"])
     return payments
 
 # Payment Schedule Routes
@@ -594,6 +597,9 @@ async def get_schedules(loan_id: Optional[str] = None, client_id: Optional[str] 
         for field in ["due_date", "paid_date"]:
             if field in schedule and schedule[field] and isinstance(schedule[field], str):
                 schedule[field] = datetime.fromisoformat(schedule[field])
+        # Convert float amounts to integers for existing data
+        if "amount" in schedule and isinstance(schedule["amount"], float):
+            schedule["amount"] = round(schedule["amount"])
     return schedules
 
 @api_router.get("/schedules/today", response_model=List[PaymentSchedule])
