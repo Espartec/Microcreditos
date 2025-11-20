@@ -11,14 +11,30 @@ import { DollarSign, ArrowLeft, Calculator } from "lucide-react";
 
 export default function LoanCalculator({ user, onLogout }) {
   const navigate = useNavigate();
+  const [systemConfig, setSystemConfig] = useState(null);
   const [formData, setFormData] = useState({
     amount: "",
-    interest_rate: "",
     term_months: ""
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingConfig, setLoadingConfig] = useState(true);
   const isAuthenticated = !!user;
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const response = await axios.get(`${API}/config/system`);
+      setSystemConfig(response.data);
+    } catch (error) {
+      toast.error("Error al cargar configuración");
+    } finally {
+      setLoadingConfig(false);
+    }
+  };
 
   const handleCalculate = async (e) => {
     e.preventDefault();
