@@ -550,6 +550,245 @@ async def get_dashboard_stats(user_id: str, role: str):
     
     return stats
 
+# ==================== ADMIN EXTENSIONS ====================
+# Importar modelos adicionales
+from admin_extensions import (
+    SystemConfig, SystemConfigUpdate, UserUpdate, PasswordUpdate,
+    LoanProposal, LoanProposalCreate, LoanProposalResponse, ProposalStatus
+)
+
+# System Configuration Routes
+@api_router.get("/config/system")
+async def get_system_config():
+    config = await db.system_config.find_one({}, {"_id": 0})
+    if not config:
+        # Crear configuración por defecto si no existe
+        default_config = {
+            "id": str(uuid.uuid4()),
+            "default_interest_rate": 12.0,
+            "available_interest_rates": [8.0, 10.0, 12.0, 15.0, 18.0, 20.0],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_by": "system"
+        }
+        await db.system_config.insert_one(default_config)
+        config = default_config
+    
+    if isinstance(config.get("updated_at"), str):
+        config["updated_at"] = datetime.fromisoformat(config["updated_at"])
+    
+    return config
+
+@api_router.put("/config/system")
+async def update_system_config(config_update: SystemConfigUpdate, admin_id: str):
+    config = await db.system_config.find_one({}, {"_id": 0})
+    
+    update_data = {
+        "default_interest_rate": config_update.default_interest_rate,
+        "available_interest_rates": config_update.available_interest_rates,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "updated_by": admin_id
+    }
+    
+    if config:
+        await db.system_config.update_one({"id": config["id"]}, {"$set": update_data})
+    else:
+        update_data["id"] = str(uuid.uuid4())
+        await db.system_config.insert_one(update_data)
+    
+    return {"message": "Configuración actualizada exitosamente"}
+
+# User Management Routes (Admin only)
+@api_router.put("/users/{user_id}")
+async def update_user(user_id: str, user_update: UserUpdate):
+    update_data = {k: v for k, v in user_update.model_dump().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No hay datos para actualizar")
+    
+    result = await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {"message": "Usuario actualizado exitosamente"}
+
+@api_router.put("/users/{user_id}/password")
+async def update_user_password(user_id: str, password_update: PasswordUpdate):
+    hashed_password = hash_password(password_update.new_password)
+    
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password": hashed_password}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {"message": "Contraseña actualizada exitosamente"}
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    # Verificar si el usuario tiene préstamos activos
+    active_loans = await db.loans.count_documents({
+        "$or": [
+            {"client_id": user_id, "status": {"$in": [LoanStatus.ACTIVE, LoanStatus.PENDING]}},
+            {"lender_id": user_id, "status": LoanStatus.ACTIVE}
+        ]
+    })
+    
+    if active_loans > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede eliminar el usuario porque tiene préstamos activos o pendientes"
+        )
+    
+    result = await db.users.delete_one({"id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {"message": "Usuario eliminado exitosamente"}
+
+# Loan Proposal Routes
+@api_router.post("/loans/{loan_id}/propose")
+async def create_loan_proposal(loan_id: str, proposal_data: LoanProposalCreate):
+    # Obtener el préstamo
+    loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
+    if not loan:
+        raise HTTPException(status_code=404, detail="Préstamo no encontrado")
+    
+    if loan["status"] != LoanStatus.PENDING:
+        raise HTTPException(status_code=400, detail="Solo se pueden crear propuestas para préstamos pendientes")
+    
+    # Obtener prestamista
+    lender = await db.users.find_one({"id": proposal_data.lender_id}, {"_id": 0})
+    if not lender:
+        raise HTTPException(status_code=404, detail="Prestamista no encontrado")
+    
+    # Calcular nuevo préstamo con tasa propuesta
+    if isinstance(loan["created_at"], str):
+        loan["created_at"] = datetime.fromisoformat(loan["created_at"])
+    
+    new_calc = calculate_loan(loan["amount"], proposal_data.proposed_interest_rate, loan["term_months"])
+    
+    # Crear propuesta
+    proposal = LoanProposal(
+        id=str(uuid.uuid4()),
+        loan_id=loan_id,
+        client_id=loan["client_id"],
+        client_name=loan["client_name"],
+        lender_id=proposal_data.lender_id,
+        lender_name=lender["name"],
+        original_interest_rate=loan["interest_rate"],
+        proposed_interest_rate=proposal_data.proposed_interest_rate,
+        original_monthly_payment=loan["monthly_payment"],
+        proposed_monthly_payment=new_calc["monthly_payment"],
+        original_total_amount=loan["total_amount"],
+        proposed_total_amount=new_calc["total_amount"],
+        reason=proposal_data.reason,
+        status=ProposalStatus.PENDING,
+        created_at=datetime.now(timezone.utc)
+    )
+    
+    proposal_doc = proposal.model_dump()
+    proposal_doc["created_at"] = proposal_doc["created_at"].isoformat()
+    proposal_doc["start_date"] = proposal_data.start_date.isoformat()
+    
+    await db.loan_proposals.insert_one(proposal_doc)
+    
+    return proposal
+
+@api_router.get("/proposals", response_model=List[LoanProposal])
+async def get_proposals(client_id: Optional[str] = None, status: Optional[str] = None):
+    query = {}
+    if client_id:
+        query["client_id"] = client_id
+    if status:
+        query["status"] = status
+    
+    proposals = await db.loan_proposals.find(query, {"_id": 0}).to_list(1000)
+    for proposal in proposals:
+        if isinstance(proposal["created_at"], str):
+            proposal["created_at"] = datetime.fromisoformat(proposal["created_at"])
+        if "responded_at" in proposal and proposal["responded_at"] and isinstance(proposal["responded_at"], str):
+            proposal["responded_at"] = datetime.fromisoformat(proposal["responded_at"])
+    
+    return proposals
+
+@api_router.post("/proposals/{proposal_id}/respond")
+async def respond_to_proposal(proposal_id: str, response: LoanProposalResponse):
+    # Obtener propuesta
+    proposal = await db.loan_proposals.find_one({"id": proposal_id}, {"_id": 0})
+    if not proposal:
+        raise HTTPException(status_code=404, detail="Propuesta no encontrada")
+    
+    if proposal["status"] != ProposalStatus.PENDING:
+        raise HTTPException(status_code=400, detail="Esta propuesta ya fue respondida")
+    
+    # Actualizar estado de la propuesta
+    new_status = ProposalStatus.ACCEPTED if response.accepted else ProposalStatus.REJECTED
+    await db.loan_proposals.update_one(
+        {"id": proposal_id},
+        {"$set": {
+            "status": new_status,
+            "responded_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if response.accepted:
+        # Obtener la fecha de inicio de la propuesta
+        start_date_str = proposal.get("start_date")
+        if isinstance(start_date_str, str):
+            start_date = datetime.fromisoformat(start_date_str)
+        else:
+            start_date = start_date_str
+        
+        # Actualizar el préstamo con la nueva tasa
+        await db.loans.update_one(
+            {"id": proposal["loan_id"]},
+            {"$set": {
+                "interest_rate": proposal["proposed_interest_rate"],
+                "monthly_payment": proposal["proposed_monthly_payment"],
+                "total_amount": proposal["proposed_total_amount"],
+                "status": LoanStatus.ACTIVE,
+                "lender_id": proposal["lender_id"],
+                "lender_name": proposal["lender_name"],
+                "approved_at": datetime.now(timezone.utc).isoformat(),
+                "start_date": start_date.isoformat()
+            }}
+        )
+        
+        # Obtener el préstamo actualizado
+        loan = await db.loans.find_one({"id": proposal["loan_id"]}, {"_id": 0})
+        
+        # Crear cronograma de pagos con la nueva tasa
+        for i in range(1, loan["term_months"] + 1):
+            due_date = start_date + timedelta(days=30 * i)
+            schedule = PaymentSchedule(
+                loan_id=loan["id"],
+                client_id=loan["client_id"],
+                client_name=loan["client_name"],
+                payment_number=i,
+                due_date=due_date,
+                amount=loan["monthly_payment"],
+                status=PaymentStatus.PENDING
+            )
+            schedule_doc = schedule.model_dump()
+            schedule_doc["due_date"] = schedule_doc["due_date"].isoformat()
+            await db.payment_schedules.insert_one(schedule_doc)
+        
+        return {"message": "Propuesta aceptada y préstamo activado exitosamente"}
+    else:
+        return {"message": "Propuesta rechazada"}
+
+@api_router.get("/proposals/count")
+async def get_proposals_count(client_id: str):
+    count = await db.loan_proposals.count_documents({
+        "client_id": client_id,
+        "status": ProposalStatus.PENDING
+    })
+    return {"count": count}
+
 # Include router
 app.include_router(api_router)
 
