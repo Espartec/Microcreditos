@@ -255,16 +255,6 @@ export default function AdminDashboard({ user, onLogout }) {
                       <div className="flex space-x-2">
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="bg-blue-50 hover:bg-blue-100 text-blue-700"
-                          onClick={() => handleEditRate(loan)}
-                          data-testid={`edit-rate-${loan.id}`}
-                        >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
                           className="bg-emerald-600 hover:bg-emerald-700"
                           onClick={() => handleOpenProposal(loan)}
                           data-testid={`approve-loan-${loan.id}`}
