@@ -179,6 +179,16 @@ export default function ClientDashboard({ user, onLogout }) {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateLoan} className="space-y-4">
+                {systemConfig && (
+                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm text-blue-900">
+                      <strong>Tasa de Interés:</strong> {systemConfig.default_interest_rate}% anual
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      El administrador podrá ajustar esta tasa según tu historial crediticio
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="amount">Monto</Label>
                   <Input
@@ -190,19 +200,6 @@ export default function ClientDashboard({ user, onLogout }) {
                     onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                     required
                     data-testid="loan-amount-input"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="interest_rate">Tasa de Interés (%)</Label>
-                  <Input
-                    id="interest_rate"
-                    type="number"
-                    step="0.01"
-                    placeholder="12"
-                    value={formData.interest_rate}
-                    onChange={(e) => setFormData({ ...formData, interest_rate: e.target.value })}
-                    required
-                    data-testid="loan-interest-input"
                   />
                 </div>
                 <div className="space-y-2">
