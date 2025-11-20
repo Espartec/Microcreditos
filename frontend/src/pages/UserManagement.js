@@ -174,7 +174,7 @@ export default function UserManagement({ user, onLogout }) {
                 size="sm"
                 variant={isActive ? "destructive" : "default"}
                 className={!isActive ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-                onClick={() => handleToggleActive(userData.id, userData.name, isActive)}
+                onClick={() => handleToggleActive(userData.id, userData.name, isActive, userData.role)}
                 data-testid={`toggle-user-${userData.id}`}
               >
                 <Power className="w-4 h-4" />
