@@ -20,12 +20,16 @@ export default function AdminDashboard({ user, onLogout }) {
   const [systemConfig, setSystemConfig] = useState(null);
   const [loading, setLoading] = useState(true);
   const [proposalDialog, setProposalDialog] = useState(false);
+  const [editRateDialog, setEditRateDialog] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
   const [proposalData, setProposalData] = useState({
     lender_id: "",
     proposed_interest_rate: "",
     reason: "",
     start_date: new Date().toISOString().split('T')[0]
+  });
+  const [editRateData, setEditRateData] = useState({
+    new_rate: ""
   });
 
   useEffect(() => {
