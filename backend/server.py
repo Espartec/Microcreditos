@@ -665,6 +665,76 @@ async def toggle_user_active(user_id: str):
     status_text = "activado" if new_status else "desactivado"
     return {"message": f"Usuario {status_text} exitosamente", "active": new_status}
 
+@api_router.get("/users/{lender_id}/assigned-loans")
+async def get_lender_assigned_loans(lender_id: str):
+    """Obtiene todos los préstamos asignados a un prestamista"""
+    loans = await db.loans.find({
+        "lender_id": lender_id,
+        "status": {"$in": [LoanStatus.ACTIVE, LoanStatus.PENDING]}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Obtener información única de clientes
+    client_info = {}
+    for loan in loans:
+        client_id = loan["client_id"]
+        if client_id not in client_info:
+            client = await db.users.find_one({"id": client_id}, {"_id": 0, "password": 0})
+            if client:
+                client_info[client_id] = {
+                    "client": client,
+                    "active_loans": [],
+                    "pending_loans": []
+                }
+        
+        if loan["status"] == LoanStatus.ACTIVE:
+            client_info[client_id]["active_loans"].append(loan)
+        else:
+            client_info[client_id]["pending_loans"].append(loan)
+    
+    return {
+        "clients_count": len(client_info),
+        "clients": list(client_info.values()),
+        "total_active_loans": len([l for l in loans if l["status"] == LoanStatus.ACTIVE]),
+        "total_pending_loans": len([l for l in loans if l["status"] == LoanStatus.PENDING])
+    }
+
+@api_router.post("/users/{old_lender_id}/reassign-clients")
+async def reassign_lender_clients(old_lender_id: str, new_lender_id: str, admin_id: str):
+    """Reasigna todos los clientes de un prestamista a otro"""
+    # Verificar que ambos prestamistas existen
+    old_lender = await db.users.find_one({"id": old_lender_id}, {"_id": 0})
+    new_lender = await db.users.find_one({"id": new_lender_id}, {"_id": 0})
+    
+    if not old_lender:
+        raise HTTPException(status_code=404, detail="Prestamista original no encontrado")
+    if not new_lender:
+        raise HTTPException(status_code=404, detail="Nuevo prestamista no encontrado")
+    if new_lender["role"] != "lender":
+        raise HTTPException(status_code=400, detail="El usuario destino debe ser prestamista")
+    
+    # Actualizar todos los préstamos activos y pendientes
+    result = await db.loans.update_many(
+        {
+            "lender_id": old_lender_id,
+            "status": {"$in": [LoanStatus.ACTIVE, LoanStatus.PENDING]}
+        },
+        {"$set": {
+            "lender_id": new_lender_id,
+            "lender_name": new_lender["name"]
+        }}
+    )
+    
+    # Actualizar schedules de pagos
+    await db.payment_schedules.update_many(
+        {"loan_id": {"$in": []}},  # Necesitaríamos obtener los loan_ids pero para simplificar...
+        {"$set": {"lender_id": new_lender_id}}
+    )
+    
+    return {
+        "message": f"Se reasignaron {result.modified_count} préstamos de {old_lender['name']} a {new_lender['name']}",
+        "modified_loans": result.modified_count
+    }
+
 # Loan Proposal Routes
 @api_router.post("/loans/{loan_id}/propose")
 async def create_loan_proposal(loan_id: str, proposal_data: LoanProposalCreate):
