@@ -48,7 +48,7 @@ export default function LoanCalculator({ user, onLogout }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate(isAuthenticated ? "/dashboard" : "/")}
               data-testid="back-to-dashboard-btn"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
@@ -59,6 +59,26 @@ export default function LoanCalculator({ user, onLogout }) {
               <span className="text-xl font-bold text-gray-900">Calculadora de Préstamos</span>
             </div>
           </div>
+          {!isAuthenticated && (
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate("/login")}
+                data-testid="header-login-btn"
+              >
+                Iniciar Sesión
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => navigate("/register")}
+                className="bg-blue-600 hover:bg-blue-700"
+                data-testid="header-register-btn"
+              >
+                Registrarse
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
