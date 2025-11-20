@@ -88,11 +88,11 @@ class Loan(BaseModel):
     client_name: str
     lender_id: Optional[str] = None
     lender_name: Optional[str] = None
-    amount: float
+    amount: int
     interest_rate: float  # percentage
     term_months: int
-    monthly_payment: float
-    total_amount: float
+    monthly_payment: int
+    total_amount: int
     status: LoanStatus
     purpose: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -100,7 +100,7 @@ class Loan(BaseModel):
     start_date: Optional[datetime] = None
 
 class LoanCreate(BaseModel):
-    amount: float
+    amount: int
     interest_rate: float
     term_months: int
     purpose: Optional[str] = None
