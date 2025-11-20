@@ -217,7 +217,6 @@ export default function LoanDetail({ user, onLogout }) {
                     <Input
                       id="amount"
                       type="number"
-                      step="0.01"
                       value={paymentData.amount}
                       onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
                       required
