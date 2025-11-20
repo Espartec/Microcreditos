@@ -6,21 +6,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { DollarSign, TrendingUp, Clock, Users, LogOut, Calendar, CheckCircle, X } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, Users, LogOut, Calendar, CheckCircle, X, Settings, UserCog, LayoutDashboard } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AdminDashboard({ user, onLogout }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loans, setLoans] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [lenders, setLenders] = useState([]);
+  const [systemConfig, setSystemConfig] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [approvalDialog, setApprovalDialog] = useState(false);
+  const [proposalDialog, setProposalDialog] = useState(false);
   const [selectedLoan, setSelectedLoan] = useState(null);
-  const [approvalData, setApprovalData] = useState({
+  const [proposalData, setProposalData] = useState({
     lender_id: "",
+    proposed_interest_rate: "",
+    reason: "",
     start_date: new Date().toISOString().split('T')[0]
   });
 
@@ -30,14 +34,16 @@ export default function AdminDashboard({ user, onLogout }) {
 
   const fetchData = async () => {
     try {
-      const [statsRes, loansRes, usersRes] = await Promise.all([
+      const [statsRes, loansRes, lendersRes, configRes] = await Promise.all([
         axios.get(`${API}/stats/dashboard?user_id=${user.id}&role=${user.role}`),
         axios.get(`${API}/loans`),
-        axios.get(`${API}/users?role=lender`)
+        axios.get(`${API}/users?role=lender`),
+        axios.get(`${API}/config/system`)
       ]);
       setStats(statsRes.data);
       setLoans(loansRes.data);
-      setUsers(usersRes.data);
+      setLenders(lendersRes.data);
+      setSystemConfig(configRes.data);
     } catch (error) {
       toast.error("Error al cargar datos");
     } finally {
@@ -45,29 +51,62 @@ export default function AdminDashboard({ user, onLogout }) {
     }
   };
 
-  const handleApproveLoan = async () => {
-    if (!approvalData.lender_id) {
+  const handleOpenProposal = (loan) => {
+    setSelectedLoan(loan);
+    setProposalData({
+      lender_id: "",
+      proposed_interest_rate: systemConfig?.default_interest_rate || loan.interest_rate,
+      reason: "",
+      start_date: new Date().toISOString().split('T')[0]
+    });
+    setProposalDialog(true);
+  };
+
+  const handleCreateProposal = async () => {
+    if (!proposalData.lender_id) {
       toast.error("Selecciona un prestamista");
       return;
     }
 
     try {
-      await axios.post(`${API}/loans/${selectedLoan.id}/approve`, {
-        loan_id: selectedLoan.id,
-        lender_id: approvalData.lender_id,
-        start_date: new Date(approvalData.start_date).toISOString()
-      });
-      toast.success("Préstamo aprobado exitosamente");
-      setApprovalDialog(false);
+      // Si la tasa es diferente a la original, crear propuesta
+      if (parseFloat(proposalData.proposed_interest_rate) !== selectedLoan.interest_rate) {
+        await axios.post(`${API}/loans/${selectedLoan.id}/propose`, {
+          loan_id: selectedLoan.id,
+          lender_id: proposalData.lender_id,
+          proposed_interest_rate: parseFloat(proposalData.proposed_interest_rate),
+          reason: proposalData.reason,
+          start_date: new Date(proposalData.start_date).toISOString()
+        });
+        toast.success("Propuesta enviada al cliente para aprobación");
+      } else {
+        // Si la tasa es igual, aprobar directamente
+        await axios.post(`${API}/loans/${selectedLoan.id}/approve`, {
+          loan_id: selectedLoan.id,
+          lender_id: proposalData.lender_id,
+          start_date: new Date(proposalData.start_date).toISOString()
+        });
+        toast.success("Préstamo aprobado exitosamente");
+      }
+      setProposalDialog(false);
       setSelectedLoan(null);
-      setApprovalData({ lender_id: "", start_date: new Date().toISOString().split('T')[0] });
+      setProposalData({
+        lender_id: "",
+        proposed_interest_rate: "",
+        reason: "",
+        start_date: new Date().toISOString().split('T')[0]
+      });
       fetchData();
     } catch (error) {
-      toast.error(error.response?.data?.detail || "Error al aprobar préstamo");
+      toast.error(error.response?.data?.detail || "Error al procesar solicitud");
     }
   };
 
   const handleRejectLoan = async (loanId) => {
+    if (!window.confirm("¿Estás seguro de rechazar este préstamo?")) {
+      return;
+    }
+
     try {
       await axios.post(`${API}/loans/${loanId}/reject`);
       toast.success("Préstamo rechazado");
@@ -92,13 +131,55 @@ export default function AdminDashboard({ user, onLogout }) {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50">
       {/* Header */}
       <header className="bg-white border-b shadow-sm">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <DollarSign className="w-8 h-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">Prestamo+</span>
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center space-x-2">
+              <DollarSign className="w-8 h-8 text-blue-600" />
+              <span className="text-2xl font-bold text-gray-900">Prestamo+ Admin</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600" data-testid="user-name-display">Hola, {user.name}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onLogout}
+                data-testid="logout-btn"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Salir
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm text-gray-600" data-testid="user-name-display">Hola, {user.name}</span>
+          
+          {/* Navigation Menu */}
+          <div className="flex space-x-2 mt-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="bg-blue-50 text-blue-700"
+              data-testid="nav-dashboard-btn"
+            >
+              <LayoutDashboard className="w-4 h-4 mr-2" />
+              Dashboard
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/users")}
+              data-testid="nav-users-btn"
+            >
+              <UserCog className="w-4 h-4 mr-2" />
+              Gestión de Usuarios
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/settings")}
+              data-testid="nav-settings-btn"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Panel de Control
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -106,16 +187,7 @@ export default function AdminDashboard({ user, onLogout }) {
               data-testid="nav-collections-btn"
             >
               <Calendar className="w-4 h-4 mr-2" />
-              Cobros
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLogout}
-              data-testid="logout-btn"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Salir
+              Módulo de Cobros
             </Button>
           </div>
         </div>
@@ -184,10 +256,7 @@ export default function AdminDashboard({ user, onLogout }) {
                         <Button
                           size="sm"
                           className="bg-emerald-600 hover:bg-emerald-700"
-                          onClick={() => {
-                            setSelectedLoan(loan);
-                            setApprovalDialog(true);
-                          }}
+                          onClick={() => handleOpenProposal(loan)}
                           data-testid={`approve-loan-${loan.id}`}
                         >
                           <CheckCircle className="w-4 h-4 mr-1" />
@@ -293,54 +362,98 @@ export default function AdminDashboard({ user, onLogout }) {
         </div>
       </main>
 
-      {/* Approval Dialog */}
-      <Dialog open={approvalDialog} onOpenChange={setApprovalDialog}>
-        <DialogContent data-testid="approval-dialog">
+      {/* Proposal Dialog */}
+      <Dialog open={proposalDialog} onOpenChange={setProposalDialog}>
+        <DialogContent className="max-w-2xl" data-testid="proposal-dialog">
           <DialogHeader>
             <DialogTitle>Aprobar Préstamo</DialogTitle>
             <DialogDescription>
-              Selecciona el prestamista y la fecha de inicio
+              Selecciona prestamista y configura los términos del préstamo
             </DialogDescription>
           </DialogHeader>
-          {selectedLoan && (
+          {selectedLoan && systemConfig && (
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="text-sm text-gray-600">Cliente: <span className="font-semibold">{selectedLoan.client_name}</span></p>
                 <p className="text-sm text-gray-600">Monto: <span className="font-semibold">${selectedLoan.amount.toLocaleString()}</span></p>
+                <p className="text-sm text-gray-600">Tasa Solicitada: <span className="font-semibold">{selectedLoan.interest_rate}%</span></p>
               </div>
+              
               <div className="space-y-2">
                 <Label>Prestamista</Label>
                 <Select
-                  value={approvalData.lender_id}
-                  onValueChange={(value) => setApprovalData({ ...approvalData, lender_id: value })}
+                  value={proposalData.lender_id}
+                  onValueChange={(value) => setProposalData({ ...proposalData, lender_id: value })}
                 >
                   <SelectTrigger data-testid="lender-select">
                     <SelectValue placeholder="Selecciona prestamista" />
                   </SelectTrigger>
                   <SelectContent>
-                    {users.map((u) => (
-                      <SelectItem key={u.id} value={u.id} data-testid={`lender-option-${u.id}`}>
-                        {u.name}
+                    {lenders.map((l) => (
+                      <SelectItem key={l.id} value={l.id} data-testid={`lender-option-${l.id}`}>
+                        {l.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label>Tasa de Interés (%)</Label>
+                <Select
+                  value={proposalData.proposed_interest_rate.toString()}
+                  onValueChange={(value) => setProposalData({ ...proposalData, proposed_interest_rate: value })}
+                >
+                  <SelectTrigger data-testid="interest-rate-select">
+                    <SelectValue placeholder="Selecciona tasa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {systemConfig.available_interest_rates.map((rate) => (
+                      <SelectItem key={rate} value={rate.toString()} data-testid={`rate-option-${rate}`}>
+                        {rate}%
+                        {rate === systemConfig.default_interest_rate && " (Por defecto)"}
+                        {rate === selectedLoan.interest_rate && " (Original)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {proposalData.proposed_interest_rate && parseFloat(proposalData.proposed_interest_rate) !== selectedLoan.interest_rate && (
+                  <p className="text-sm text-amber-600">
+                    ⚠️ Has cambiado la tasa. Se enviará una propuesta al cliente para aprobación.
+                  </p>
+                )}
+              </div>
+
+              {proposalData.proposed_interest_rate && parseFloat(proposalData.proposed_interest_rate) !== selectedLoan.interest_rate && (
+                <div className="space-y-2">
+                  <Label>Razón del Cambio (Opcional)</Label>
+                  <Textarea
+                    placeholder="Ejemplo: Basado en el historial crediticio del cliente..."
+                    value={proposalData.reason}
+                    onChange={(e) => setProposalData({ ...proposalData, reason: e.target.value })}
+                    data-testid="reason-input"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label>Fecha de Inicio</Label>
                 <Input
                   type="date"
-                  value={approvalData.start_date}
-                  onChange={(e) => setApprovalData({ ...approvalData, start_date: e.target.value })}
+                  value={proposalData.start_date}
+                  onChange={(e) => setProposalData({ ...proposalData, start_date: e.target.value })}
                   data-testid="start-date-input"
                 />
               </div>
+
               <Button
-                onClick={handleApproveLoan}
+                onClick={handleCreateProposal}
                 className="w-full bg-emerald-600 hover:bg-emerald-700"
                 data-testid="confirm-approve-btn"
               >
-                Confirmar Aprobación
+                {proposalData.proposed_interest_rate && parseFloat(proposalData.proposed_interest_rate) !== selectedLoan.interest_rate
+                  ? "Enviar Propuesta al Cliente"
+                  : "Aprobar Préstamo"}
               </Button>
             </div>
           )}
