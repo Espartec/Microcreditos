@@ -16,6 +16,13 @@ export default function Landing() {
         <div className="flex space-x-4">
           <Button
             variant="ghost"
+            onClick={() => navigate("/calculator")}
+            data-testid="nav-calculator-btn"
+          >
+            Calculadora
+          </Button>
+          <Button
+            variant="ghost"
             onClick={() => navigate("/login")}
             data-testid="nav-login-btn"
           >
