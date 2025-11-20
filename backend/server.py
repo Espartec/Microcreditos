@@ -134,7 +134,6 @@ class PaymentSchedule(BaseModel):
     payment_number: int
     due_date: datetime
     amount: int
-    amount: float
     status: PaymentStatus
     paid_date: Optional[datetime] = None
 
@@ -142,7 +141,7 @@ class PaymentScheduleUpdate(BaseModel):
     due_date: datetime
 
 class LoanCalculation(BaseModel):
-    amount: float
+    amount: int
     interest_rate: float
     term_months: int
 
