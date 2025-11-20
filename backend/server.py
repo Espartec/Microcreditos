@@ -146,9 +146,9 @@ class LoanCalculation(BaseModel):
     term_months: int
 
 class LoanCalculationResult(BaseModel):
-    monthly_payment: float
-    total_amount: float
-    total_interest: float
+    monthly_payment: int
+    total_amount: int
+    total_interest: int
     schedule: List[dict]
 
 # Helper Functions
