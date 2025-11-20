@@ -181,7 +181,7 @@ export default function LoanDetail({ user, onLogout }) {
         </div>
 
         {/* Payment Button */}
-        {loan.status === "active" && user.role === "client" && user.id === loan.client_id && (
+        {loan.status === "active" && (user.role === "admin" || (user.role === "lender" && user.id === loan.lender_id)) && (
           <div className="mb-8 text-center">
             <Dialog open={paymentDialog} onOpenChange={setPaymentDialog}>
               <DialogTrigger asChild>
