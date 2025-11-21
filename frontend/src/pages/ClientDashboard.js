@@ -40,7 +40,14 @@ export default function ClientDashboard({ user, onLogout }) {
         axios.get(`${API}/config/system`)
       ]);
       setStats(statsRes.data);
-      setLoans(loansRes.data);
+      
+      // Ordenar préstamos: activos primero, luego pendientes, completados al final
+      const sortedLoans = loansRes.data.sort((a, b) => {
+        const statusOrder = { 'active': 1, 'approved': 2, 'pending': 3, 'completed': 4, 'rejected': 5 };
+        return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      });
+      
+      setLoans(sortedLoans);
       setProposalsCount(proposalsRes.data.count);
       setSystemConfig(configRes.data);
     } catch (error) {
