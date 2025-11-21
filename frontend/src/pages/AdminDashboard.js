@@ -32,11 +32,6 @@ export default function AdminDashboard({ user, onLogout }) {
   const [monthlyUtility, setMonthlyUtility] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [financialComparison, setFinancialComparison] = useState(null);
-  const [newExpense, setNewExpense] = useState({
-    description: "",
-    amount: "",
-    category: ""
-  });
 
   useEffect(() => {
     fetchData();
