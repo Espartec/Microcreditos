@@ -249,6 +249,38 @@ export default function LoanCalculator({ user, onLogout }) {
                   </div>
                 </div>
 
+                {/* Llamado a la Acción para usuarios no autenticados */}
+                {!isAuthenticated && (
+                  <div className="p-6 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-lg text-white">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold mb-2">¿Te gustó esta simulación?</h3>
+                        <p className="text-blue-50 mb-4">
+                          Regístrate ahora para solicitar tu préstamo con estos términos
+                        </p>
+                        <div className="flex space-x-3">
+                          <Button
+                            onClick={() => navigate("/register")}
+                            className="bg-white text-blue-600 hover:bg-blue-50 font-semibold"
+                          >
+                            Registrarse
+                          </Button>
+                          <Button
+                            onClick={() => navigate("/login")}
+                            variant="outline"
+                            className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-blue-600"
+                          >
+                            Iniciar Sesión
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="hidden md:block">
+                        <DollarSign className="w-20 h-20 text-white opacity-50" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Tabla de Amortización</h3>
                   <div className="max-h-96 overflow-y-auto border rounded-lg">
