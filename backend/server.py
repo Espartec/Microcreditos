@@ -148,12 +148,15 @@ class LoanCalculation(BaseModel):
     amount: int
     interest_rate: float
     term_months: int
+    payment_frequency_days: Optional[int] = 30  # Días entre pagos
 
 class LoanCalculationResult(BaseModel):
-    monthly_payment: int
+    payment_amount: int  # Monto por pago (antes monthly_payment)
+    total_payments: int  # Total de pagos a realizar
     total_amount: int
     total_interest: int
     schedule: List[dict]
+    payment_frequency_days: int
 
 # Helper Functions
 def hash_password(password: str) -> str:
