@@ -153,7 +153,7 @@ export default function ExpensesPage({ user }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/admin")}
+              onClick={() => navigate("/dashboard")}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver al Dashboard
