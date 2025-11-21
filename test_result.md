@@ -200,12 +200,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Endpoint GET /api/admin/monthly-utility"
-    - "Endpoint POST /api/admin/expenses"
-    - "Endpoint GET /api/admin/expenses"
-    - "Endpoint DELETE /api/admin/expenses/{expense_id}"
-    - "Endpoint GET /api/admin/financial-comparison"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
