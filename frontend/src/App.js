@@ -147,6 +147,17 @@ function App() {
               )
             }
           />
+          
+          <Route
+            path="/gastos"
+            element={
+              user && user.role === "admin" ? (
+                <ExpensesPage user={user} onLogout={handleLogout} />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" richColors />
