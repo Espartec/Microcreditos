@@ -272,6 +272,18 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Nueva página creada con gestión completa de gastos: 1) Sección de Gastos Fijos con CRUD completo 2) Sección de Gastos Generales del mes 3) Formulario con toggle Fijo/General 4) Tarjetas de resumen. Ruta agregada en App.js."
+  
+  - task: "Transparencia de tarifas adicionales en LoanDetail"
+    implemented: false
+    working: "NA"
+    file: "LoanDetail.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Iniciando implementación: Agregar desglose detallado de tarifas adicionales (sistematización, seguro) en la vista detallada del préstamo. Incluir: monto original, fees individuales con porcentajes, monto base, intereses, y total final."
 
 metadata:
   created_by: "main_agent"
