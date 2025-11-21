@@ -269,7 +269,11 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Panel financiero en AdminDashboard"
+    - "Endpoint GET /api/admin/fixed-expenses"
+    - "Endpoint POST /api/admin/fixed-expenses"
+    - "Endpoint DELETE /api/admin/fixed-expenses/{id}"
+    - "Endpoint PUT /api/admin/fixed-expenses/{id}"
+    - "Página ExpensesPage (/gastos)"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
