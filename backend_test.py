@@ -754,6 +754,208 @@ class LoanAppAPITester:
         else:
             self.log_test("Data Integrity", False, "Could not get financial comparison")
 
+    def test_fee_transparency(self):
+        """Test fee transparency functionality as requested"""
+        print("\n🔍 Testing Fee Transparency (Transparencia de Tarifas Adicionales)...")
+        
+        # Test 1: Verify existing loan structure with fee fields
+        print("  Testing existing loan structure...")
+        test_loan_id = "deeb38ac-2e54-4021-9c2f-be1010c646bb"
+        
+        response = self.make_request('GET', f'loans/{test_loan_id}')
+        if response and response.status_code == 200:
+            loan_data = response.json()
+            required_fee_fields = [
+                'system_fee_amount', 'insurance_fee_amount', 
+                'system_fee_percentage', 'insurance_fee_percentage'
+            ]
+            
+            missing_fields = [field for field in required_fee_fields if field not in loan_data]
+            if not missing_fields:
+                # Verify the specific test loan data
+                expected_values = {
+                    'amount': 100000,
+                    'system_fee_amount': 500,  # 0.5% of 100000
+                    'insurance_fee_amount': 1000,  # 1.0% of 100000
+                    'total_amount': 107004
+                }
+                
+                values_correct = all(
+                    loan_data.get(key) == value 
+                    for key, value in expected_values.items()
+                )
+                
+                if values_correct:
+                    self.log_test("Existing Loan Fee Structure", True)
+                else:
+                    incorrect_values = {
+                        key: f"expected {value}, got {loan_data.get(key)}"
+                        for key, value in expected_values.items()
+                        if loan_data.get(key) != value
+                    }
+                    self.log_test("Existing Loan Fee Structure", False, f"Incorrect values: {incorrect_values}")
+            else:
+                self.log_test("Existing Loan Fee Structure", False, f"Missing fee fields: {missing_fields}")
+        else:
+            self.log_test("Existing Loan Fee Structure", False, f"Could not retrieve test loan. Status: {response.status_code if response else 'No response'}")
+        
+        # Test 2: Verify fee calculation in calculator
+        print("  Testing fee calculation in calculator...")
+        calc_data = {
+            "amount": 50000,
+            "interest_rate": 10,
+            "term_months": 6,
+            "payment_frequency_days": 30,
+            "system_fee_percentage": 0.5,
+            "insurance_fee_percentage": 1.0
+        }
+        
+        response = self.make_request('POST', 'loans/calculate', calc_data)
+        if response and response.status_code == 200:
+            calc_result = response.json()
+            required_calc_fields = [
+                'system_fee_amount', 'insurance_fee_amount', 
+                'total_fees', 'base_amount'
+            ]
+            
+            missing_calc_fields = [field for field in required_calc_fields if field not in calc_result]
+            if not missing_calc_fields:
+                # Verify calculations
+                expected_system_fee = round(50000 * 0.005)  # 0.5%
+                expected_insurance_fee = round(50000 * 0.01)  # 1.0%
+                expected_total_fees = expected_system_fee + expected_insurance_fee
+                expected_base_amount = 50000 + expected_total_fees
+                
+                calculations_correct = (
+                    calc_result['system_fee_amount'] == expected_system_fee and
+                    calc_result['insurance_fee_amount'] == expected_insurance_fee and
+                    calc_result['total_fees'] == expected_total_fees and
+                    calc_result['base_amount'] == expected_base_amount
+                )
+                
+                if calculations_correct:
+                    self.log_test("Fee Calculator Calculations", True)
+                else:
+                    calc_errors = {
+                        'system_fee': f"expected {expected_system_fee}, got {calc_result.get('system_fee_amount')}",
+                        'insurance_fee': f"expected {expected_insurance_fee}, got {calc_result.get('insurance_fee_amount')}",
+                        'total_fees': f"expected {expected_total_fees}, got {calc_result.get('total_fees')}",
+                        'base_amount': f"expected {expected_base_amount}, got {calc_result.get('base_amount')}"
+                    }
+                    self.log_test("Fee Calculator Calculations", False, f"Calculation errors: {calc_errors}")
+            else:
+                self.log_test("Fee Calculator Calculations", False, f"Missing calculation fields: {missing_calc_fields}")
+        else:
+            self.log_test("Fee Calculator Calculations", False, f"Calculator request failed. Status: {response.status_code if response else 'No response'}")
+        
+        # Test 3: Verify automatic fee calculation in new loan creation
+        print("  Testing automatic fee calculation in new loan creation...")
+        
+        if 'client' not in self.users:
+            self.log_test("New Loan Fee Calculation", False, "No client user available")
+            return
+        
+        # Create a new loan to test automatic fee calculation
+        loan_data = {
+            "amount": 75000,
+            "interest_rate": 12,
+            "term_months": 12,
+            "purpose": "Test loan for fee transparency"
+        }
+        
+        client = self.users['client']
+        params = {
+            "client_id": client['id'],
+            "client_name": client['name']
+        }
+        
+        response = self.make_request('POST', 'loans', loan_data, self.tokens['client'], params)
+        if response and response.status_code == 200:
+            new_loan = response.json()
+            
+            # Verify fee fields are present and calculated
+            fee_fields_present = all(
+                field in new_loan 
+                for field in ['system_fee_amount', 'insurance_fee_amount', 'system_fee_percentage', 'insurance_fee_percentage']
+            )
+            
+            if fee_fields_present:
+                # Verify default percentages are applied (from system config)
+                expected_system_pct = 0.5  # Default from backend
+                expected_insurance_pct = 1.0  # Default from backend
+                
+                percentages_correct = (
+                    new_loan['system_fee_percentage'] == expected_system_pct and
+                    new_loan['insurance_fee_percentage'] == expected_insurance_pct
+                )
+                
+                if percentages_correct:
+                    # Verify amounts are calculated correctly
+                    expected_system_amount = round(75000 * (expected_system_pct / 100))
+                    expected_insurance_amount = round(75000 * (expected_insurance_pct / 100))
+                    
+                    amounts_correct = (
+                        new_loan['system_fee_amount'] == expected_system_amount and
+                        new_loan['insurance_fee_amount'] == expected_insurance_amount
+                    )
+                    
+                    if amounts_correct:
+                        self.log_test("New Loan Fee Calculation", True)
+                        # Store this loan for potential cleanup
+                        self.loans['fee_test_loan'] = new_loan
+                    else:
+                        amount_errors = {
+                            'system_amount': f"expected {expected_system_amount}, got {new_loan.get('system_fee_amount')}",
+                            'insurance_amount': f"expected {expected_insurance_amount}, got {new_loan.get('insurance_fee_amount')}"
+                        }
+                        self.log_test("New Loan Fee Calculation", False, f"Amount calculation errors: {amount_errors}")
+                else:
+                    percentage_errors = {
+                        'system_pct': f"expected {expected_system_pct}, got {new_loan.get('system_fee_percentage')}",
+                        'insurance_pct': f"expected {expected_insurance_pct}, got {new_loan.get('insurance_fee_percentage')}"
+                    }
+                    self.log_test("New Loan Fee Calculation", False, f"Percentage errors: {percentage_errors}")
+            else:
+                missing_fee_fields = [
+                    field for field in ['system_fee_amount', 'insurance_fee_amount', 'system_fee_percentage', 'insurance_fee_percentage']
+                    if field not in new_loan
+                ]
+                self.log_test("New Loan Fee Calculation", False, f"Missing fee fields in new loan: {missing_fee_fields}")
+        else:
+            self.log_test("New Loan Fee Calculation", False, f"Could not create new loan. Status: {response.status_code if response else 'No response'}")
+        
+        # Test 4: Verify fee transparency data completeness
+        print("  Testing fee transparency data completeness...")
+        
+        # Get the test loan again and verify all transparency fields
+        response = self.make_request('GET', f'loans/{test_loan_id}')
+        if response and response.status_code == 200:
+            loan_data = response.json()
+            
+            # Check for all fields needed for frontend transparency display
+            transparency_fields = [
+                'amount',  # Monto Solicitado
+                'system_fee_percentage', 'system_fee_amount',  # Sistematización
+                'insurance_fee_percentage', 'insurance_fee_amount',  # Seguro
+                'total_amount'  # Monto Total a Pagar
+            ]
+            
+            all_fields_present = all(field in loan_data for field in transparency_fields)
+            if all_fields_present:
+                # Verify we can calculate base amount (amount + fees)
+                calculated_base = loan_data['amount'] + loan_data['system_fee_amount'] + loan_data['insurance_fee_amount']
+                total_interest = loan_data['total_amount'] - calculated_base
+                
+                if total_interest >= 0:  # Interest should be non-negative
+                    self.log_test("Fee Transparency Data Completeness", True)
+                else:
+                    self.log_test("Fee Transparency Data Completeness", False, f"Negative interest calculated: {total_interest}")
+            else:
+                missing_transparency_fields = [field for field in transparency_fields if field not in loan_data]
+                self.log_test("Fee Transparency Data Completeness", False, f"Missing transparency fields: {missing_transparency_fields}")
+        else:
+            self.log_test("Fee Transparency Data Completeness", False, f"Could not retrieve loan for transparency check. Status: {response.status_code if response else 'No response'}")
+
     def test_get_users(self):
         """Test getting users"""
         print("\n🔍 Testing Get Users...")
