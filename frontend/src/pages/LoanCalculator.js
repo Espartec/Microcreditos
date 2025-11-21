@@ -204,6 +204,29 @@ export default function LoanCalculator({ user, onLogout }) {
                 <CardTitle>Resultados</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Desglose de Cargos */}
+                <div className="p-4 bg-gradient-to-r from-purple-50 to-emerald-50 border-2 border-purple-200 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-3">💰 Desglose del Préstamo</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                    <div>
+                      <p className="text-gray-600">Monto Solicitado</p>
+                      <p className="font-bold text-gray-900">${formData.amount?.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Sistematización ({systemConfig?.default_system_fee}%)</p>
+                      <p className="font-bold text-purple-700">+${result.system_fee_amount?.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Seguro ({systemConfig?.default_insurance_fee}%)</p>
+                      <p className="font-bold text-emerald-700">+${result.insurance_fee_amount?.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Monto Base</p>
+                      <p className="font-bold text-blue-700">${result.base_amount?.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-blue-50 rounded-lg">
                     <p className="text-sm text-gray-600 mb-1">
