@@ -101,3 +101,100 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: Implementar panel financiero para el administrador que muestre la utilidad mensual (intereses cobrados) y permita gestionar gastos mensuales con comparación de Gastos vs Utilidad.
+
+backend:
+  - task: "Endpoint GET /api/admin/monthly-utility"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para obtener utilidad mensual (intereses cobrados). Calcula intereses de pagos del mes actual o especificado."
+  
+  - task: "Endpoint POST /api/admin/expenses"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para crear nuevos gastos mensuales con descripción, monto, categoría, mes y año."
+  
+  - task: "Endpoint GET /api/admin/expenses"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para obtener gastos del mes actual o especificado."
+  
+  - task: "Endpoint DELETE /api/admin/expenses/{expense_id}"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para eliminar un gasto por su ID."
+  
+  - task: "Endpoint GET /api/admin/financial-comparison"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para comparar gastos vs utilidad mensual con desglose por categoría."
+
+frontend:
+  - task: "Panel financiero en AdminDashboard"
+    implemented: false
+    working: "NA"
+    file: "AdminDashboard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Pendiente: Actualizar AdminDashboard para mostrar utilidad mensual y formulario de gastos."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "Endpoint GET /api/admin/monthly-utility"
+    - "Endpoint POST /api/admin/expenses"
+    - "Endpoint GET /api/admin/expenses"
+    - "Endpoint DELETE /api/admin/expenses/{expense_id}"
+    - "Endpoint GET /api/admin/financial-comparison"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Backend completado con 5 nuevos endpoints para gestión financiera. Se necesita testing de todos los endpoints antes de proceder con el frontend. Los endpoints incluyen: monthly-utility (obtener intereses del mes), expenses (CRUD de gastos), y financial-comparison (comparación gastos vs utilidad)."
