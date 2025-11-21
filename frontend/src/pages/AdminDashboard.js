@@ -522,21 +522,39 @@ export default function AdminDashboard({ user, onLogout }) {
             </CardContent>
           </Card>
 
-          {/* Expenses Summary */}
+          {/* Quick Expenses Summary */}
           {expenses.length > 0 && (
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Desglose de Gastos por Categoría</CardTitle>
-                <CardDescription>Distribución de gastos del mes actual</CardDescription>
+                <CardTitle>Resumen Rápido de Gastos</CardTitle>
+                <CardDescription>{expenses.length} gastos registrados este mes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {financialComparison.expenses_breakdown.map((item, index) => (
-                    <div key={index} className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg text-center">
-                      <p className="text-sm font-medium text-gray-600 mb-1">{item.category}</p>
-                      <p className="text-lg font-bold text-gray-900">${item.amount.toLocaleString()}</p>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-purple-50 rounded-lg text-center border border-purple-200">
+                    <p className="text-sm font-medium text-purple-600 mb-1">Gastos Fijos</p>
+                    <p className="text-xl font-bold text-purple-700">
+                      {expenses.filter(e => e.is_fixed).length}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-lg text-center border border-amber-200">
+                    <p className="text-sm font-medium text-amber-600 mb-1">Gastos Generales</p>
+                    <p className="text-xl font-bold text-amber-700">
+                      {expenses.filter(e => !e.is_fixed).length}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg text-center border border-blue-200">
+                    <p className="text-sm font-medium text-blue-600 mb-1">Total Fijos</p>
+                    <p className="text-xl font-bold text-blue-700">
+                      ${expenses.filter(e => e.is_fixed).reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-emerald-50 rounded-lg text-center border border-emerald-200">
+                    <p className="text-sm font-medium text-emerald-600 mb-1">Total Generales</p>
+                    <p className="text-xl font-bold text-emerald-700">
+                      ${expenses.filter(e => !e.is_fixed).reduce((sum, e) => sum + e.amount, 0).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
