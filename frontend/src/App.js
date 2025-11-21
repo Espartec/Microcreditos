@@ -17,7 +17,7 @@ import CollectionModule from "@/pages/CollectionModule";
 import UserManagement from "@/pages/UserManagement";
 import SystemSettings from "@/pages/SystemSettings";
 import LoanProposals from "@/pages/LoanProposals";
-
+import ExpensesPage from "@/pages/ExpensesPage";
 import LenderClientsPage from "@/pages/LenderClientsPage";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
