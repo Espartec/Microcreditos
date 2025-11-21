@@ -134,7 +134,7 @@ class LoanAppAPITester:
         response = self.make_request('POST', 'loans/calculate', calc_data)
         if response and response.status_code == 200:
             result = response.json()
-            if 'monthly_payment' in result and 'total_amount' in result:
+            if 'payment_amount' in result and 'total_amount' in result:
                 self.log_test("Loan Calculator", True)
             else:
                 self.log_test("Loan Calculator", False, "Missing calculation fields")
