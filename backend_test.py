@@ -3,6 +3,7 @@ import sys
 import json
 from datetime import datetime, timedelta
 import uuid
+import time
 
 class LoanAppAPITester:
     def __init__(self, base_url="https://financemgr.preview.emergentagent.com"):
