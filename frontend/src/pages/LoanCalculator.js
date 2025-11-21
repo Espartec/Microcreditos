@@ -124,16 +124,6 @@ export default function LoanCalculator({ user, onLogout }) {
                 </div>
               ) : (
                 <form onSubmit={handleCalculate} className="space-y-4">
-                  {systemConfig && (
-                    <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                      <p className="text-sm text-blue-900">
-                        <strong>Tasa de Interés:</strong> {systemConfig.default_interest_rate}% anual
-                      </p>
-                      <p className="text-xs text-blue-700 mt-1">
-                        Esta es la tasa estándar del sistema
-                      </p>
-                    </div>
-                  )}
                   <div className="space-y-2">
                     <Label htmlFor="amount">Monto del Préstamo</Label>
                     <Input
