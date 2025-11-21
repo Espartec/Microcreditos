@@ -1004,6 +1004,10 @@ class LoanAppAPITester:
         self.test_expenses_fixed_integration()
         self.test_data_integrity()
         
+        # Run fee transparency tests
+        print("\n💳 Testing Fee Transparency (Transparencia de Tarifas Adicionales)...")
+        self.test_fee_transparency()
+        
         # Print summary
         print(f"\n📊 Test Summary:")
         print(f"Tests Run: {self.tests_run}")
