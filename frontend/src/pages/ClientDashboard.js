@@ -22,7 +22,8 @@ export default function ClientDashboard({ user, onLogout }) {
   const [formData, setFormData] = useState({
     amount: "",
     term_months: "",
-    purpose: ""
+    purpose: "",
+    payment_frequency: "monthly"  // Valor por defecto
   });
 
   useEffect(() => {
