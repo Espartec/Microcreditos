@@ -107,63 +107,78 @@ user_problem_statement: Implementar panel financiero para el administrador que m
 backend:
   - task: "Endpoint GET /api/admin/monthly-utility"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para obtener utilidad mensual (intereses cobrados). Calcula intereses de pagos del mes actual o especificado."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint funciona correctamente tanto sin parámetros (mes actual) como con year/month específicos. Retorna todos los campos requeridos: month, year, total_interest_collected, total_payments, active_loans_count, completed_loans_count. Montos son enteros como se requiere."
   
   - task: "Endpoint POST /api/admin/expenses"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para crear nuevos gastos mensuales con descripción, monto, categoría, mes y año."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint crea gastos correctamente con admin_id como query param. Retorna ID único y created_at en formato ISO. Valida que amount sea entero. Funciona con datos realistas de prueba."
   
   - task: "Endpoint GET /api/admin/expenses"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para obtener gastos del mes actual o especificado."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint retorna array de gastos correctamente. Funciona sin parámetros (mes actual) y con year/month específicos. Los gastos creados aparecen en las consultas correspondientes."
   
   - task: "Endpoint DELETE /api/admin/expenses/{expense_id}"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para eliminar un gasto por su ID."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint elimina gastos correctamente y retorna 404 cuando el gasto no existe. Manejo de errores apropiado implementado."
   
   - task: "Endpoint GET /api/admin/financial-comparison"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para comparar gastos vs utilidad mensual con desglose por categoría."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint funciona perfectamente. Retorna month, year, total_utility, total_expenses, net_profit, expenses_breakdown. Cálculo de net_profit es correcto (utility - expenses). expenses_breakdown es array con categorías y montos. Integridad de datos verificada."
 
 frontend:
   - task: "Panel financiero en AdminDashboard"
