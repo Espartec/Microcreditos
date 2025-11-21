@@ -400,6 +400,29 @@ async def approve_loan(loan_id: str, approval: LoanApproval):
     if not lender:
         raise HTTPException(status_code=404, detail="Lender not found")
     
+    # Generar número de crédito automático: YYYYMMNN
+    now = datetime.now(timezone.utc)
+    year_month = now.strftime("%Y%m")  # YYYYMM
+    
+    # Contar préstamos aprobados este mes para obtener el consecutivo
+    start_of_month = datetime(now.year, now.month, 1, tzinfo=timezone.utc)
+    if now.month == 12:
+        end_of_month = datetime(now.year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_of_month = datetime(now.year, now.month + 1, 1, tzinfo=timezone.utc)
+    
+    # Contar préstamos aprobados en este mes
+    approved_count = await db.loans.count_documents({
+        "approved_at": {
+            "$gte": start_of_month.isoformat(),
+            "$lt": end_of_month.isoformat()
+        }
+    })
+    
+    # Número consecutivo (el siguiente disponible)
+    consecutive = approved_count + 1
+    loan_number = f"{year_month}{consecutive:02d}"  # Formato: YYYYMMNN
+    
     # Update loan
     await db.loans.update_one(
         {"id": loan_id},
@@ -407,6 +430,7 @@ async def approve_loan(loan_id: str, approval: LoanApproval):
             "status": LoanStatus.ACTIVE,
             "lender_id": approval.lender_id,
             "lender_name": lender["name"],
+            "loan_number": loan_number,
             "approved_at": datetime.now(timezone.utc).isoformat(),
             "start_date": approval.start_date.isoformat()
         }}
