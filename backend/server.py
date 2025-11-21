@@ -1319,8 +1319,11 @@ async def get_expenses(year: int = None, month: int = None):
     
     # Agregar automáticamente los gastos fijos no registrados
     for fixed_exp in fixed_expenses:
+        # Generar un ID único para esta instancia mensual del gasto fijo
+        expense_id = str(uuid.uuid4())
         expense_data = {
-            "id": fixed_exp["id"],
+            "id": expense_id,
+            "fixed_expense_id": fixed_exp["id"],  # Referencia al gasto fijo original
             "description": fixed_exp["description"],
             "amount": fixed_exp["amount"],
             "category": None,
@@ -1330,8 +1333,13 @@ async def get_expenses(year: int = None, month: int = None):
             "created_at": datetime.now(timezone.utc).isoformat(),
             "created_by": fixed_exp["created_by"]
         }
-        await db.expenses.insert_one({**expense_data, "_id": expense_data["id"]})
-        expenses.append(expense_data)
+        try:
+            await db.expenses.insert_one({**expense_data, "_id": expense_data["id"]})
+            expenses.append(expense_data)
+        except Exception as e:
+            # Si ya existe, simplemente omitir (puede pasar si se llama múltiples veces)
+            print(f"Error al insertar gasto fijo automático: {e}")
+            pass
     
     return expenses
 
