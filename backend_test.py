@@ -531,6 +531,13 @@ class LoanAppAPITester:
         self.test_payment_creation()
         self.test_dashboard_stats()
         
+        # Run new financial management tests
+        print("\n🏦 Testing Financial Management Endpoints...")
+        self.test_monthly_utility()
+        self.test_expenses_crud()
+        self.test_financial_comparison()
+        self.test_data_integrity()
+        
         # Print summary
         print(f"\n📊 Test Summary:")
         print(f"Tests Run: {self.tests_run}")
