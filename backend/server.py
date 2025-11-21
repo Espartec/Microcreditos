@@ -84,6 +84,7 @@ class Token(BaseModel):
 class Loan(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    loan_number: Optional[str] = None  # Número de crédito: YYYYMMNN
     client_id: str
     client_name: str
     lender_id: Optional[str] = None
