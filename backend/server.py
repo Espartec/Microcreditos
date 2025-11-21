@@ -331,7 +331,9 @@ async def calculate_loan_route(data: LoanCalculation):
         data.amount, 
         data.interest_rate, 
         data.term_months,
-        data.payment_frequency_days
+        data.payment_frequency_days,
+        data.system_fee_percentage,
+        data.insurance_fee_percentage
     )
     return LoanCalculationResult(**result)
 
