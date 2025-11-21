@@ -25,6 +25,10 @@ class SystemConfig(BaseModel):
     default_interest_rate: float
     available_interest_rates: List[float]
     payment_frequencies: List[PaymentFrequency] = []
+    default_system_fee: float = 0.5  # Porcentaje de sistematización (0.5%)
+    available_system_fees: List[float] = [0.0, 0.5, 1.0, 1.5, 2.0]
+    default_insurance_fee: float = 1.0  # Porcentaje de seguro (1.0%)
+    available_insurance_fees: List[float] = [0.0, 0.5, 1.0, 1.5, 2.0, 3.0]
     updated_at: datetime
     updated_by: str
 
@@ -32,6 +36,10 @@ class SystemConfigUpdate(BaseModel):
     default_interest_rate: float
     available_interest_rates: List[float]
     payment_frequencies: Optional[List[dict]] = None
+    default_system_fee: Optional[float] = None
+    available_system_fees: Optional[List[float]] = None
+    default_insurance_fee: Optional[float] = None
+    available_insurance_fees: Optional[List[float]] = None
 
 # Modelos para gestión de usuarios
 class UserUpdate(BaseModel):
