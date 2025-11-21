@@ -427,6 +427,179 @@ export default function AdminDashboard({ user, onLogout }) {
             ))
           )}
         </div>
+
+        {/* Financial Panel */}
+        <div className="mt-12 mb-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Panel Financiero</h2>
+          
+          {/* Monthly Utility */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-200">
+              <CardHeader>
+                <CardTitle className="text-emerald-800 flex items-center">
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Utilidad Mensual
+                </CardTitle>
+                <CardDescription>Intereses cobrados este mes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-emerald-700">
+                  ${monthlyUtility?.total_interest_collected?.toLocaleString() || 0}
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  Total de pagos: ${monthlyUtility?.total_payments?.toLocaleString() || 0}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
+              <CardHeader>
+                <CardTitle className="text-amber-800 flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Gastos del Mes
+                </CardTitle>
+                <CardDescription>Total de gastos registrados</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-3xl font-bold text-amber-700">
+                  ${financialComparison?.total_expenses?.toLocaleString() || 0}
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {expenses.length} gastos registrados
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className={`bg-gradient-to-br ${(financialComparison?.net_profit || 0) >= 0 ? 'from-blue-50 to-blue-100 border-blue-200' : 'from-red-50 to-red-100 border-red-200'}`}>
+              <CardHeader>
+                <CardTitle className={`${(financialComparison?.net_profit || 0) >= 0 ? 'text-blue-800' : 'text-red-800'} flex items-center`}>
+                  <TrendingUp className="w-5 h-5 mr-2" />
+                  Ganancia Neta
+                </CardTitle>
+                <CardDescription>Utilidad - Gastos</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className={`text-3xl font-bold ${(financialComparison?.net_profit || 0) >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
+                  ${financialComparison?.net_profit?.toLocaleString() || 0}
+                </p>
+                <p className="text-sm text-gray-600 mt-2">
+                  {(financialComparison?.net_profit || 0) >= 0 ? 'Positivo ✅' : 'Negativo ⚠️'}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Expense Management */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Add Expense Form */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Registrar Nuevo Gasto</CardTitle>
+                <CardDescription>Agregar gastos operacionales del mes</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Descripción</Label>
+                    <Input
+                      placeholder="Ej: Renta de oficina, salarios, etc."
+                      value={newExpense.description}
+                      onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Monto</Label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={newExpense.amount}
+                      onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label>Categoría</Label>
+                    <Select value={newExpense.category} onValueChange={(val) => setNewExpense({ ...newExpense, category: val })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona categoría" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Operaciones">Operaciones</SelectItem>
+                        <SelectItem value="Salarios">Salarios</SelectItem>
+                        <SelectItem value="Renta">Renta</SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Tecnología">Tecnología</SelectItem>
+                        <SelectItem value="Otros">Otros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button 
+                    onClick={handleAddExpense}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Registrar Gasto
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Expenses List */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Gastos del Mes Actual</CardTitle>
+                <CardDescription>
+                  {expenses.length > 0 ? `${expenses.length} gastos registrados` : 'No hay gastos registrados'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                  {expenses.length === 0 ? (
+                    <p className="text-center text-gray-500 py-8">No hay gastos registrados este mes</p>
+                  ) : (
+                    expenses.map((expense) => (
+                      <div key={expense.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{expense.description}</p>
+                          <p className="text-sm text-gray-600">{expense.category}</p>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <p className="font-bold text-gray-900">${expense.amount.toLocaleString()}</p>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteExpense(expense.id)}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Expenses Breakdown */}
+          {financialComparison?.expenses_breakdown && financialComparison.expenses_breakdown.length > 0 && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle>Desglose de Gastos por Categoría</CardTitle>
+                <CardDescription>Distribución de gastos del mes actual</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {financialComparison.expenses_breakdown.map((item, index) => (
+                    <div key={index} className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg text-center">
+                      <p className="text-sm font-medium text-gray-600 mb-1">{item.category}</p>
+                      <p className="text-lg font-bold text-gray-900">${item.amount.toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </main>
 
       {/* Proposal Dialog */}
