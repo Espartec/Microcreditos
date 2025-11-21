@@ -73,18 +73,32 @@ class MonthlyExpense(BaseModel):
     id: str
     description: str
     amount: int
-    category: str
+    category: Optional[str] = None  # Ahora opcional
     month: int  # 1-12
     year: int
+    is_fixed: bool = False  # True si es gasto fijo/recurrente
     created_at: datetime
     created_by: str
 
 class MonthlyExpenseCreate(BaseModel):
     description: str
     amount: int
-    category: str
+    category: Optional[str] = None
     month: int
     year: int
+    is_fixed: bool = False
+
+class FixedExpense(BaseModel):
+    id: str
+    description: str
+    amount: int
+    created_at: datetime
+    created_by: str
+    active: bool = True
+
+class FixedExpenseCreate(BaseModel):
+    description: str
+    amount: int
 
 class MonthlyUtility(BaseModel):
     month: int
