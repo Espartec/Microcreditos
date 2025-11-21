@@ -218,3 +218,5 @@ agent_communication:
     message: "✅ BACKEND TESTING COMPLETO: Todos los 5 endpoints funcionando correctamente. Utilidad mensual, CRUD de gastos y comparación financiera probados exhaustivamente."
   - agent: "main"
     message: "✅ FRONTEND IMPLEMENTADO: Panel financiero completo en AdminDashboard con visualización de utilidad, formulario de gastos, lista de gastos y desglose por categoría. Listo para testing frontend."
+  - agent: "main"
+    message: "✅ MODIFICACIÓN SISTEMA DE GASTOS: Backend actualizado con soporte para gastos fijos vs generales. Frontend: nueva página /gastos creada con gestión completa de gastos fijos (recurrentes) y generales (one-time). AdminDashboard simplificado con botón de redirección. Nuevos endpoints: GET/POST/DELETE/PUT /admin/fixed-expenses. Listo para testing."
