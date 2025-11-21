@@ -34,7 +34,11 @@ export default function SystemSettings({ user, onLogout }) {
       const response = await axios.get(`${API}/config/system`);
       setConfig({
         default_interest_rate: response.data.default_interest_rate,
-        available_interest_rates: response.data.available_interest_rates
+        available_interest_rates: response.data.available_interest_rates,
+        default_system_fee: response.data.default_system_fee || 0.5,
+        available_system_fees: response.data.available_system_fees || [0.0, 0.5, 1.0, 1.5, 2.0],
+        default_insurance_fee: response.data.default_insurance_fee || 1.0,
+        available_insurance_fees: response.data.available_insurance_fees || [0.0, 0.5, 1.0, 1.5, 2.0, 3.0]
       });
     } catch (error) {
       toast.error("Error al cargar configuración");
