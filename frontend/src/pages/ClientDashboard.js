@@ -65,7 +65,7 @@ export default function ClientDashboard({ user, onLogout }) {
       );
       toast.success("Solicitud de préstamo creada exitosamente");
       setDialogOpen(false);
-      setFormData({ amount: "", term_months: "", purpose: "" });
+      setFormData({ amount: "", term_months: "", purpose: "", payment_frequency: "monthly" });
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Error al crear solicitud");
