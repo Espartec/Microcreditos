@@ -1154,6 +1154,172 @@ async def get_proposals_count(client_id: str):
     })
     return {"count": count}
 
+# ============= Endpoints de Gestión Financiera =============
+
+@api_router.get("/admin/monthly-utility")
+async def get_monthly_utility(year: int = None, month: int = None):
+    """Obtiene la utilidad mensual (intereses cobrados) del mes actual o especificado"""
+    from datetime import datetime, timezone
+    import calendar
+    
+    # Si no se especifica año/mes, usar el mes actual
+    if not year or not month:
+        now = datetime.now(timezone.utc)
+        year = now.year
+        month = now.month
+    
+    # Calcular el rango de fechas del mes
+    start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    
+    # Obtener todos los pagos del mes
+    payments = await db.payments.find({
+        "payment_date": {
+            "$gte": start_date.isoformat(),
+            "$lt": end_date.isoformat()
+        }
+    }, {"_id": 0}).to_list(10000)
+    
+    total_payments = 0
+    total_interest = 0
+    loans_data = {}
+    
+    # Para cada pago, calcular la porción de intereses
+    for payment in payments:
+        loan_id = payment["loan_id"]
+        payment_amount = payment["amount"]
+        total_payments += payment_amount
+        
+        # Obtener información del préstamo si no la tenemos
+        if loan_id not in loans_data:
+            loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
+            if loan:
+                loans_data[loan_id] = loan
+        
+        if loan_id in loans_data:
+            loan = loans_data[loan_id]
+            
+            # Calcular la tasa mensual
+            monthly_rate = loan["interest_rate"] / 100 / 12
+            
+            # Calcular proporción de intereses
+            if loan["monthly_payment"] > 0:
+                original_amount = loan["amount"]
+                if original_amount > 0:
+                    estimated_balance = original_amount * 0.6
+                    estimated_interest_per_payment = estimated_balance * monthly_rate
+                    interest_ratio = min(estimated_interest_per_payment / loan["monthly_payment"], 0.5)
+                    
+                    interest_portion = payment_amount * interest_ratio
+                    total_interest += interest_portion
+    
+    # Contar préstamos activos y completados
+    active_loans = await db.loans.count_documents({
+        "status": {"$in": [LoanStatus.ACTIVE, LoanStatus.APPROVED]}
+    })
+    
+    completed_loans = await db.loans.count_documents({
+        "status": LoanStatus.COMPLETED
+    })
+    
+    return {
+        "month": month,
+        "year": year,
+        "total_interest_collected": round(total_interest),
+        "total_payments": round(total_payments),
+        "active_loans_count": active_loans,
+        "completed_loans_count": completed_loans
+    }
+
+@api_router.post("/admin/expenses")
+async def create_expense(expense: dict, admin_id: str):
+    """Crear un nuevo gasto mensual"""
+    from datetime import datetime, timezone
+    
+    expense_data = {
+        "id": str(uuid.uuid4()),
+        "description": expense["description"],
+        "amount": int(expense["amount"]),
+        "category": expense["category"],
+        "month": int(expense["month"]),
+        "year": int(expense["year"]),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": admin_id
+    }
+    
+    await db.expenses.insert_one({**expense_data, "_id": expense_data["id"]})
+    return expense_data
+
+@api_router.get("/admin/expenses")
+async def get_expenses(year: int = None, month: int = None):
+    """Obtener gastos del mes actual o especificado"""
+    from datetime import datetime, timezone
+    
+    # Si no se especifica año/mes, usar el mes actual
+    if not year or not month:
+        now = datetime.now(timezone.utc)
+        year = now.year
+        month = now.month
+    
+    expenses = await db.expenses.find({
+        "year": year,
+        "month": month
+    }, {"_id": 0}).to_list(1000)
+    
+    return expenses
+
+@api_router.delete("/admin/expenses/{expense_id}")
+async def delete_expense(expense_id: str):
+    """Eliminar un gasto"""
+    result = await db.expenses.delete_one({"id": expense_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    return {"message": "Gasto eliminado"}
+
+@api_router.get("/admin/financial-comparison")
+async def get_financial_comparison(year: int = None, month: int = None):
+    """Obtener comparación de gastos vs utilidad"""
+    from datetime import datetime, timezone
+    
+    # Si no se especifica año/mes, usar el mes actual
+    if not year or not month:
+        now = datetime.now(timezone.utc)
+        year = now.year
+        month = now.month
+    
+    # Obtener utilidad del mes
+    utility_data = await get_monthly_utility(year, month)
+    total_utility = utility_data["total_interest_collected"]
+    
+    # Obtener gastos del mes
+    expenses = await get_expenses(year, month)
+    total_expenses = sum(exp["amount"] for exp in expenses)
+    
+    # Agrupar gastos por categoría
+    expenses_by_category = {}
+    for exp in expenses:
+        category = exp["category"]
+        if category not in expenses_by_category:
+            expenses_by_category[category] = 0
+        expenses_by_category[category] += exp["amount"]
+    
+    expenses_breakdown = [
+        {"category": cat, "amount": amount}
+        for cat, amount in expenses_by_category.items()
+    ]
+    
+    return {
+        "month": month,
+        "year": year,
+        "total_utility": total_utility,
+        "total_expenses": total_expenses,
+        "net_profit": total_utility - total_expenses,
+        "expenses_breakdown": expenses_breakdown
+    }
+
 # Include router
 app.include_router(api_router)
 
