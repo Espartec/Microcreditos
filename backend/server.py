@@ -95,6 +95,9 @@ class Loan(BaseModel):
     total_amount: int
     status: LoanStatus
     purpose: Optional[str] = None
+    payment_frequency: Optional[str] = "monthly"  # ID de la frecuencia
+    payment_frequency_name: Optional[str] = "Mensual"  # Nombre legible
+    payment_frequency_days: Optional[int] = 30  # Días entre pagos
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     approved_at: Optional[datetime] = None
     start_date: Optional[datetime] = None
@@ -104,6 +107,7 @@ class LoanCreate(BaseModel):
     interest_rate: float
     term_months: int
     purpose: Optional[str] = None
+    payment_frequency: Optional[str] = "monthly"  # ID de la frecuencia seleccionada
 
 class LoanApproval(BaseModel):
     loan_id: str
