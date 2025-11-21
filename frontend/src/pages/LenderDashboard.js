@@ -20,6 +20,10 @@ export default function LenderDashboard({ user, onLogout }) {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    filterLoans();
+  }, [searchTerm, loans]);
+
   const fetchData = async () => {
     try {
       const [statsRes, loansRes] = await Promise.all([
@@ -28,11 +32,29 @@ export default function LenderDashboard({ user, onLogout }) {
       ]);
       setStats(statsRes.data);
       setLoans(loansRes.data);
+      setFilteredLoans(loansRes.data);
     } catch (error) {
       toast.error("Error al cargar datos");
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterLoans = () => {
+    if (!searchTerm.trim()) {
+      setFilteredLoans(loans);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = loans.filter(loan => 
+      loan.client_name?.toLowerCase().includes(term) ||
+      loan.loan_number?.toLowerCase().includes(term) ||
+      loan.amount?.toString().includes(term) ||
+      loan.status?.toLowerCase().includes(term)
+    );
+    
+    setFilteredLoans(filtered);
   };
 
   if (loading) {
