@@ -352,12 +352,18 @@ async def create_loan(loan_data: LoanCreate, client_id: str, client_name: str):
                 payment_freq_name = freq["name"]
                 break
     
-    # Calculate loan details con la frecuencia
+    # Obtener porcentajes de fees desde la configuración
+    system_fee_pct = config.get("default_system_fee", 0.5) if config else 0.5
+    insurance_fee_pct = config.get("default_insurance_fee", 1.0) if config else 1.0
+    
+    # Calculate loan details con la frecuencia y fees
     calc = calculate_loan(
         loan_data.amount, 
         loan_data.interest_rate, 
         loan_data.term_months,
-        payment_freq_days
+        payment_freq_days,
+        system_fee_pct,
+        insurance_fee_pct
     )
     
     loan = Loan(
@@ -365,6 +371,10 @@ async def create_loan(loan_data: LoanCreate, client_id: str, client_name: str):
         client_name=client_name,
         amount=loan_data.amount,
         interest_rate=loan_data.interest_rate,
+        system_fee_percentage=system_fee_pct,
+        system_fee_amount=calc["system_fee_amount"],
+        insurance_fee_percentage=insurance_fee_pct,
+        insurance_fee_amount=calc["insurance_fee_amount"],
         term_months=loan_data.term_months,
         monthly_payment=calc["payment_amount"],
         total_amount=calc["total_amount"],
