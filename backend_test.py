@@ -389,10 +389,13 @@ class LoanAppAPITester:
                 
                 # Verify expense was deleted by trying to delete again (should return 404)
                 response = self.make_request('DELETE', f'admin/expenses/{created_expense_id}')
-                if response and response.status_code == 404:
-                    self.log_test("Delete Non-existent Expense (404)", True)
+                if response:
+                    if response.status_code == 404:
+                        self.log_test("Delete Non-existent Expense (404)", True)
+                    else:
+                        self.log_test("Delete Non-existent Expense (404)", False, f"Expected 404, got {response.status_code}")
                 else:
-                    self.log_test("Delete Non-existent Expense (404)", False, f"Expected 404, got {response.status_code if response else 'No response'}")
+                    self.log_test("Delete Non-existent Expense (404)", False, "No response received")
             else:
                 self.log_test("Delete Expense", False, f"Status: {response.status_code if response else 'No response'}")
         else:
