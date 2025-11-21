@@ -153,10 +153,10 @@ export default function ExpensesPage({ user }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate(-1)}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver al Dashboard
+              Volver
             </Button>
             <div className="flex items-center space-x-2">
               <DollarSign className="w-8 h-8 text-blue-600" />
