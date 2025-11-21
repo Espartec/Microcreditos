@@ -177,20 +177,17 @@ def calculate_loan(amount: int, interest_rate: float, term_months: int, payment_
     Args:
         amount: Monto del préstamo
         interest_rate: Tasa de interés anual (%)
-        term_months: Plazo en meses
+        term_months: Cantidad de pagos a realizar (antes llamado "meses" pero ahora es número de cuotas)
         payment_frequency_days: Días entre cada pago (1=diario, 2=día por medio, 7=semanal, 30=mensual)
     
     Returns:
         dict con payment_amount, total_payments, total_amount, total_interest, schedule
     """
-    # Calcular tasa de interés por período
+    # El término "term_months" ahora representa la CANTIDAD DE PAGOS, no meses
+    total_payments = term_months
+    
+    # Calcular tasa de interés por período según la frecuencia
     annual_rate = interest_rate / 100
-    
-    # Calcular número total de pagos según la frecuencia
-    days_in_period = term_months * 30  # Aproximadamente días totales
-    total_payments = days_in_period // payment_frequency_days
-    
-    # Tasa de interés por período de pago
     period_rate = annual_rate * (payment_frequency_days / 365)
     
     if period_rate == 0:
