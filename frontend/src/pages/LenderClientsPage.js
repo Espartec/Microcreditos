@@ -186,7 +186,7 @@ export default function LenderClientsPage({ user, onLogout }) {
                       <div className="space-y-1">
                         {clientData.active_loans.map((loan) => (
                           <div key={loan.id} className="text-xs text-gray-600">
-                            ${loan.amount.toLocaleString()} - {loan.term_months} meses ({loan.interest_rate}%)
+                            ${loan.amount.toLocaleString()} - {loan.term_months} ({loan.payment_frequency_name?.toLowerCase() || 'mensual'}) - {loan.interest_rate}%
                           </div>
                         ))}
                       </div>
