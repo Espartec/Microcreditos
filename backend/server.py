@@ -956,6 +956,10 @@ async def get_system_config():
                 {"id": "weekly", "name": "Semanal", "days": 7, "active": True},
                 {"id": "monthly", "name": "Mensual", "days": 30, "active": True}
             ],
+            "default_system_fee": 0.5,
+            "available_system_fees": [0.0, 0.5, 1.0, 1.5, 2.0],
+            "default_insurance_fee": 1.0,
+            "available_insurance_fees": [0.0, 0.5, 1.0, 1.5, 2.0, 3.0],
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "updated_by": "system"
         }
