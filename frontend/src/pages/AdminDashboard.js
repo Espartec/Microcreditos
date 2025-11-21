@@ -32,6 +32,9 @@ export default function AdminDashboard({ user, onLogout }) {
   const [monthlyUtility, setMonthlyUtility] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [financialComparison, setFinancialComparison] = useState(null);
+  
+  // UI states
+  const [showActiveLoans, setShowActiveLoans] = useState(false); // Por defecto oculto
 
   useEffect(() => {
     fetchData();
