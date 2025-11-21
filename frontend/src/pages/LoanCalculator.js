@@ -14,7 +14,8 @@ export default function LoanCalculator({ user, onLogout }) {
   const [systemConfig, setSystemConfig] = useState(null);
   const [formData, setFormData] = useState({
     amount: "",
-    term_months: ""
+    term_months: "",
+    payment_frequency: "monthly"  // Valor por defecto
   });
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
