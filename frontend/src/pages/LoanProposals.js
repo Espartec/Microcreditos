@@ -71,8 +71,8 @@ export default function LoanProposals({ user, onLogout }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/dashboard")}
-              data-testid="back-to-dashboard-btn"
+              onClick={() => navigate(-1)}
+              data-testid="back-btn"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Volver
