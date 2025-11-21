@@ -91,6 +91,10 @@ class Loan(BaseModel):
     lender_name: Optional[str] = None
     amount: int
     interest_rate: float  # percentage
+    system_fee_percentage: float = 0.5  # Porcentaje de sistematización
+    system_fee_amount: int = 0  # Monto calculado de sistematización
+    insurance_fee_percentage: float = 1.0  # Porcentaje de seguro
+    insurance_fee_amount: int = 0  # Monto calculado de seguro
     term_months: int
     monthly_payment: int
     total_amount: int
