@@ -156,6 +156,28 @@ export default function LoanCalculator({ user, onLogout }) {
                       data-testid="calc-term-input"
                     />
                   </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="payment_frequency">Forma de Pago</Label>
+                    <Select 
+                      value={formData.payment_frequency} 
+                      onValueChange={(val) => setFormData({ ...formData, payment_frequency: val })}
+                    >
+                      <SelectTrigger data-testid="calc-frequency-select">
+                        <SelectValue placeholder="Selecciona frecuencia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {systemConfig?.payment_frequencies
+                          ?.filter(freq => freq.active)
+                          .map((freq) => (
+                            <SelectItem key={freq.id} value={freq.id}>
+                              {freq.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
                   <Button
                     type="submit"
                     className="w-full bg-blue-600 hover:bg-blue-700"
