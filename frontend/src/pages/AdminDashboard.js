@@ -27,9 +27,20 @@ export default function AdminDashboard({ user, onLogout }) {
     reason: "",
     start_date: new Date().toISOString().split('T')[0]
   });
+  
+  // Financial management states
+  const [monthlyUtility, setMonthlyUtility] = useState(null);
+  const [expenses, setExpenses] = useState([]);
+  const [financialComparison, setFinancialComparison] = useState(null);
+  const [newExpense, setNewExpense] = useState({
+    description: "",
+    amount: "",
+    category: ""
+  });
 
   useEffect(() => {
     fetchData();
+    fetchFinancialData();
   }, []);
 
   const fetchData = async () => {
@@ -48,6 +59,62 @@ export default function AdminDashboard({ user, onLogout }) {
       toast.error("Error al cargar datos");
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const fetchFinancialData = async () => {
+    try {
+      const now = new Date();
+      const [utilityRes, expensesRes, comparisonRes] = await Promise.all([
+        axios.get(`${API}/admin/monthly-utility`),
+        axios.get(`${API}/admin/expenses`),
+        axios.get(`${API}/admin/financial-comparison`)
+      ]);
+      setMonthlyUtility(utilityRes.data);
+      setExpenses(expensesRes.data);
+      setFinancialComparison(comparisonRes.data);
+    } catch (error) {
+      console.error("Error al cargar datos financieros:", error);
+    }
+  };
+  
+  const handleAddExpense = async () => {
+    if (!newExpense.description || !newExpense.amount || !newExpense.category) {
+      toast.error("Por favor completa todos los campos");
+      return;
+    }
+    
+    try {
+      const now = new Date();
+      await axios.post(
+        `${API}/admin/expenses?admin_id=${user.id}`,
+        {
+          description: newExpense.description,
+          amount: parseInt(newExpense.amount),
+          category: newExpense.category,
+          month: now.getMonth() + 1,
+          year: now.getFullYear()
+        }
+      );
+      toast.success("Gasto registrado exitosamente");
+      setNewExpense({ description: "", amount: "", category: "" });
+      fetchFinancialData();
+    } catch (error) {
+      toast.error("Error al registrar gasto");
+    }
+  };
+  
+  const handleDeleteExpense = async (expenseId) => {
+    if (!window.confirm("¿Estás seguro de eliminar este gasto?")) {
+      return;
+    }
+    
+    try {
+      await axios.delete(`${API}/admin/expenses/${expenseId}`);
+      toast.success("Gasto eliminado");
+      fetchFinancialData();
+    } catch (error) {
+      toast.error("Error al eliminar gasto");
     }
   };
 
