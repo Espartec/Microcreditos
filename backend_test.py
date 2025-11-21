@@ -6,7 +6,7 @@ import uuid
 import time
 
 class LoanAppAPITester:
-    def __init__(self, base_url="https://financemgr.preview.emergentagent.com"):
+    def __init__(self, base_url="https://credito-facil-30.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tokens = {}  # Store tokens for different users

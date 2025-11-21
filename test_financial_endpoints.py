@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 
 def test_financial_endpoints():
-    base_url = "https://financemgr.preview.emergentagent.com/api"
+    base_url = "https://credito-facil-30.preview.emergentagent.com/api"
     
     print("🏦 Testing Financial Management Endpoints...")
     
