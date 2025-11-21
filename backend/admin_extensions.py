@@ -67,3 +67,37 @@ class LoanProposalCreate(BaseModel):
 class LoanProposalResponse(BaseModel):
     proposal_id: str
     accepted: bool
+
+# Modelos para gestión financiera
+class MonthlyExpense(BaseModel):
+    id: str
+    description: str
+    amount: int
+    category: str
+    month: int  # 1-12
+    year: int
+    created_at: datetime
+    created_by: str
+
+class MonthlyExpenseCreate(BaseModel):
+    description: str
+    amount: int
+    category: str
+    month: int
+    year: int
+
+class MonthlyUtility(BaseModel):
+    month: int
+    year: int
+    total_interest_collected: int
+    total_payments: int
+    active_loans_count: int
+    completed_loans_count: int
+
+class FinancialComparison(BaseModel):
+    month: int
+    year: int
+    total_utility: int  # intereses cobrados
+    total_expenses: int  # gastos
+    net_profit: int  # utilidad - gastos
+    expenses_breakdown: List[dict]  # desglose por categoría
