@@ -1158,7 +1158,13 @@ async def get_proposals_count(client_id: str):
 
 @api_router.get("/admin/monthly-utility")
 async def get_monthly_utility(year: int = None, month: int = None):
-    """Obtiene la utilidad mensual (intereses cobrados) del mes actual o especificado"""
+    """Obtiene la utilidad mensual (intereses cobrados) del mes actual o especificado
+    
+    Calcula los intereses de forma precisa basándose en:
+    - Solo las cuotas PAGADAS en el mes especificado
+    - El cálculo de amortización real del préstamo
+    - El número de cuota pagada para determinar el interés exacto
+    """
     from datetime import datetime, timezone
     import calendar
     
@@ -1187,10 +1193,11 @@ async def get_monthly_utility(year: int = None, month: int = None):
     total_interest = 0
     loans_data = {}
     
-    # Para cada pago, calcular la porción de intereses
+    # Para cada pago, calcular la porción de intereses de forma precisa
     for payment in payments:
         loan_id = payment["loan_id"]
         payment_amount = payment["amount"]
+        payment_number = payment.get("payment_number", 1)
         total_payments += payment_amount
         
         # Obtener información del préstamo si no la tenemos
@@ -1202,19 +1209,30 @@ async def get_monthly_utility(year: int = None, month: int = None):
         if loan_id in loans_data:
             loan = loans_data[loan_id]
             
-            # Calcular la tasa mensual
+            # Calcular schedule de amortización para obtener interés exacto
             monthly_rate = loan["interest_rate"] / 100 / 12
+            monthly_payment = loan["monthly_payment"]
+            original_amount = loan["amount"]
             
-            # Calcular proporción de intereses
-            if loan["monthly_payment"] > 0:
-                original_amount = loan["amount"]
-                if original_amount > 0:
-                    estimated_balance = original_amount * 0.6
-                    estimated_interest_per_payment = estimated_balance * monthly_rate
-                    interest_ratio = min(estimated_interest_per_payment / loan["monthly_payment"], 0.5)
-                    
-                    interest_portion = payment_amount * interest_ratio
-                    total_interest += interest_portion
+            # Calcular el balance restante antes de este pago
+            balance = original_amount
+            for i in range(1, payment_number):
+                interest_for_period = balance * monthly_rate
+                principal_for_period = monthly_payment - interest_for_period
+                balance -= principal_for_period
+            
+            # El interés de esta cuota es el balance multiplicado por la tasa mensual
+            interest_for_this_payment = balance * monthly_rate
+            
+            # Si el pago es menor que la cuota completa (pago parcial), 
+            # calcular proporción del interés
+            if payment_amount < monthly_payment:
+                interest_portion = (payment_amount / monthly_payment) * interest_for_this_payment
+            else:
+                # Para pagos normales o mayores, tomar el interés calculado
+                interest_portion = interest_for_this_payment
+            
+            total_interest += interest_portion
     
     # Contar préstamos activos y completados
     active_loans = await db.loans.count_documents({
