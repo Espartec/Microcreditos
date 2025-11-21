@@ -140,6 +140,37 @@ export default function UserManagement({ user, onLogout }) {
     }
   };
 
+  const handlePermanentDelete = async () => {
+    if (!selectedUser) return;
+
+    // Doble confirmación
+    const firstConfirm = window.confirm(
+      `⚠️ ADVERTENCIA: Estás a punto de ELIMINAR DEFINITIVAMENTE al usuario "${selectedUser.name}".\n\n` +
+      `Esta acción NO se puede deshacer.\n\n¿Estás seguro de continuar?`
+    );
+
+    if (!firstConfirm) return;
+
+    const secondConfirm = window.confirm(
+      `⚠️ ÚLTIMA CONFIRMACIÓN\n\n` +
+      `Por favor confirma que deseas eliminar PERMANENTEMENTE a:\n` +
+      `"${selectedUser.name}"\n\n` +
+      `Esta acción borrará todos sus datos del sistema.`
+    );
+
+    if (!secondConfirm) return;
+
+    try {
+      await axios.delete(`${API}/users/${selectedUser.id}/permanent`);
+      toast.success("Usuario eliminado definitivamente");
+      setEditDialog(false);
+      setSelectedUser(null);
+      fetchUsers();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Error al eliminar usuario");
+    }
+  };
+
   const UserCard = ({ userData }) => {
     const isActive = userData.active !== false;
     
