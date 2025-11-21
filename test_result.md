@@ -293,7 +293,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Página ExpensesPage (/gastos)"
+    - "Transparencia de tarifas adicionales en LoanDetail"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
