@@ -392,6 +392,7 @@ export default function UserManagement({ user, onLogout }) {
                   data-testid="edit-address-input"
                 />
               </div>
+              
               <Button
                 onClick={handleSaveEdit}
                 className="w-full bg-blue-600 hover:bg-blue-700"
@@ -400,6 +401,29 @@ export default function UserManagement({ user, onLogout }) {
                 <Shield className="w-4 h-4 mr-2" />
                 Guardar Cambios
               </Button>
+
+              {/* Botón de eliminación definitiva - Solo si el usuario está inactivo */}
+              {selectedUser && selectedUser.active === false && (
+                <div className="pt-4 border-t">
+                  <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-800 font-medium">
+                      ⚠️ Zona de Peligro
+                    </p>
+                    <p className="text-xs text-red-600 mt-1">
+                      El usuario está inactivo. Puedes eliminarlo definitivamente del sistema.
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handlePermanentDelete}
+                    variant="destructive"
+                    className="w-full bg-red-600 hover:bg-red-700"
+                    data-testid="permanent-delete-btn"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Eliminar Definitivamente
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
