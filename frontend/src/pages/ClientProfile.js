@@ -153,12 +153,16 @@ export default function ClientProfile({ user, onLogout }) {
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                     <div>
-                      <p className="text-gray-600">Cuota Mensual</p>
+                      <p className="text-gray-600">
+                        Cuota {loan.payment_frequency_name || 'Mensual'}
+                      </p>
                       <p className="font-semibold text-gray-900">${loan.monthly_payment}</p>
                     </div>
                     <div>
                       <p className="text-gray-600">Plazo</p>
-                      <p className="font-semibold text-gray-900">{loan.term_months} meses</p>
+                      <p className="font-semibold text-gray-900">
+                        {loan.term_months} ({loan.payment_frequency_name?.toLowerCase() || 'mensual'})
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-600">Tasa</p>
