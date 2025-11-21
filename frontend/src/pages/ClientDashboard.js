@@ -204,20 +204,45 @@ export default function ClientDashboard({ user, onLogout }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="term_months">Plazo (meses)</Label>
+                  <Label htmlFor="payment_frequency">Forma de Pago</Label>
+                  <Select 
+                    value={formData.payment_frequency} 
+                    onValueChange={(val) => setFormData({ ...formData, payment_frequency: val })}
+                  >
+                    <SelectTrigger data-testid="loan-frequency-select">
+                      <SelectValue placeholder="Selecciona frecuencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {systemConfig?.payment_frequencies
+                        ?.filter(freq => freq.active)
+                        .map((freq) => (
+                          <SelectItem key={freq.id} value={freq.id}>
+                            {freq.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="term_months">Plazo (cantidad de pagos)</Label>
                   <Input
                     id="term_months"
                     type="number"
-                    placeholder="12"
+                    placeholder="10"
+                    min="1"
                     value={formData.term_months}
                     onChange={(e) => setFormData({ ...formData, term_months: e.target.value })}
                     required
                     data-testid="loan-term-input"
                   />
+                  <p className="text-xs text-gray-600">
+                    Número de cuotas según la forma de pago seleccionada
+                  </p>
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="payment_frequency">Forma de Pago</Label>
+                <div className="space-y-2 hidden">
+                  <Label htmlFor="payment_frequency_old">Forma de Pago Old</Label>
                   <Select 
                     value={formData.payment_frequency} 
                     onValueChange={(val) => setFormData({ ...formData, payment_frequency: val })}
