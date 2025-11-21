@@ -26,6 +26,7 @@ export default function ClientDashboard({ user, onLogout }) {
     purpose: "",
     payment_frequency: "monthly"  // Valor por defecto
   });
+  const [loanPreview, setLoanPreview] = useState(null);
 
   useEffect(() => {
     fetchData();
