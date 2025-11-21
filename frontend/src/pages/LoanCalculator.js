@@ -42,10 +42,15 @@ export default function LoanCalculator({ user, onLogout }) {
     setLoading(true);
 
     try {
+      // Obtener días de la frecuencia seleccionada
+      const selectedFreq = systemConfig.payment_frequencies?.find(f => f.id === formData.payment_frequency);
+      const payment_frequency_days = selectedFreq?.days || 30;
+
       const response = await axios.post(`${API}/loans/calculate`, {
         amount: parseFloat(formData.amount),
         interest_rate: systemConfig.default_interest_rate,
-        term_months: parseInt(formData.term_months)
+        term_months: parseInt(formData.term_months),
+        payment_frequency_days: payment_frequency_days
       });
       setResult(response.data);
       toast.success("Cálculo completado");
