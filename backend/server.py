@@ -1337,11 +1337,73 @@ async def get_expenses(year: int = None, month: int = None):
 
 @api_router.delete("/admin/expenses/{expense_id}")
 async def delete_expense(expense_id: str):
-    """Eliminar un gasto"""
-    result = await db.expenses.delete_one({"id": expense_id})
-    if result.deleted_count == 0:
+    """Eliminar un gasto (solo generales, los fijos se gestionan desde fixed-expenses)"""
+    # Verificar si es un gasto fijo
+    expense = await db.expenses.find_one({"id": expense_id}, {"_id": 0})
+    if not expense:
         raise HTTPException(status_code=404, detail="Gasto no encontrado")
+    
+    if expense.get("is_fixed"):
+        raise HTTPException(status_code=400, detail="No se puede eliminar un gasto fijo desde aquí. Usa el endpoint de gastos fijos.")
+    
+    result = await db.expenses.delete_one({"id": expense_id})
     return {"message": "Gasto eliminado"}
+
+# ============= Endpoints de Gastos Fijos =============
+
+@api_router.get("/admin/fixed-expenses")
+async def get_fixed_expenses():
+    """Obtener lista de gastos fijos/recurrentes"""
+    fixed_expenses = await db.fixed_expenses.find({
+        "active": True
+    }, {"_id": 0}).to_list(1000)
+    return fixed_expenses
+
+@api_router.post("/admin/fixed-expenses")
+async def create_fixed_expense(expense: dict, admin_id: str):
+    """Agregar un nuevo gasto fijo a la plantilla"""
+    from datetime import datetime, timezone
+    
+    fixed_expense = {
+        "id": str(uuid.uuid4()),
+        "description": expense["description"],
+        "amount": int(expense["amount"]),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": admin_id,
+        "active": True
+    }
+    
+    await db.fixed_expenses.insert_one({**fixed_expense, "_id": fixed_expense["id"]})
+    return fixed_expense
+
+@api_router.delete("/admin/fixed-expenses/{expense_id}")
+async def delete_fixed_expense(expense_id: str):
+    """Eliminar un gasto fijo de la plantilla (marca como inactivo)"""
+    result = await db.fixed_expenses.update_one(
+        {"id": expense_id},
+        {"$set": {"active": False}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Gasto fijo no encontrado")
+    return {"message": "Gasto fijo eliminado"}
+
+@api_router.put("/admin/fixed-expenses/{expense_id}")
+async def update_fixed_expense(expense_id: str, expense: dict):
+    """Actualizar un gasto fijo"""
+    update_data = {
+        "description": expense["description"],
+        "amount": int(expense["amount"])
+    }
+    
+    result = await db.fixed_expenses.update_one(
+        {"id": expense_id},
+        {"$set": update_data}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Gasto fijo no encontrado")
+    
+    return {"message": "Gasto fijo actualizado"}
 
 @api_router.get("/admin/financial-comparison")
 async def get_financial_comparison(year: int = None, month: int = None):
