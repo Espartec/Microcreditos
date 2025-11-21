@@ -500,99 +500,30 @@ export default function AdminDashboard({ user, onLogout }) {
             </Card>
           </div>
 
-          {/* Expense Management */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Add Expense Form */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Registrar Nuevo Gasto</CardTitle>
-                <CardDescription>Agregar gastos operacionales del mes</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div>
-                    <Label>Descripción</Label>
-                    <Input
-                      placeholder="Ej: Renta de oficina, salarios, etc."
-                      value={newExpense.description}
-                      onChange={(e) => setNewExpense({ ...newExpense, description: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Monto</Label>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={newExpense.amount}
-                      onChange={(e) => setNewExpense({ ...newExpense, amount: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>Categoría</Label>
-                    <Select value={newExpense.category} onValueChange={(val) => setNewExpense({ ...newExpense, category: val })}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona categoría" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Operaciones">Operaciones</SelectItem>
-                        <SelectItem value="Salarios">Salarios</SelectItem>
-                        <SelectItem value="Renta">Renta</SelectItem>
-                        <SelectItem value="Marketing">Marketing</SelectItem>
-                        <SelectItem value="Tecnología">Tecnología</SelectItem>
-                        <SelectItem value="Otros">Otros</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Button 
-                    onClick={handleAddExpense}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                  >
-                    <DollarSign className="w-4 h-4 mr-2" />
-                    Registrar Gasto
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          {/* Expense Management Button */}
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle>Gestión de Gastos</CardTitle>
+              <CardDescription>
+                Administra gastos fijos y generales del mes
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={() => navigate("/gastos")}
+                className="w-full bg-blue-600 hover:bg-blue-700 h-16 text-lg"
+              >
+                <DollarSign className="w-6 h-6 mr-2" />
+                Ir a Gestión de Gastos
+              </Button>
+              <p className="text-sm text-gray-600 mt-4 text-center">
+                Configura gastos fijos recurrentes y registra gastos adicionales
+              </p>
+            </CardContent>
+          </Card>
 
-            {/* Expenses List */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Gastos del Mes Actual</CardTitle>
-                <CardDescription>
-                  {expenses.length > 0 ? `${expenses.length} gastos registrados` : 'No hay gastos registrados'}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-[400px] overflow-y-auto">
-                  {expenses.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">No hay gastos registrados este mes</p>
-                  ) : (
-                    expenses.map((expense) => (
-                      <div key={expense.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{expense.description}</p>
-                          <p className="text-sm text-gray-600">{expense.category}</p>
-                        </div>
-                        <div className="flex items-center space-x-3">
-                          <p className="font-bold text-gray-900">${expense.amount.toLocaleString()}</p>
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteExpense(expense.id)}
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Expenses Breakdown */}
-          {financialComparison?.expenses_breakdown && financialComparison.expenses_breakdown.length > 0 && (
+          {/* Expenses Summary */}
+          {expenses.length > 0 && (
             <Card className="mt-6">
               <CardHeader>
                 <CardTitle>Desglose de Gastos por Categoría</CardTitle>
