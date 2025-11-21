@@ -304,7 +304,12 @@ async def get_user(user_id: str):
 # Loan Routes
 @api_router.post("/loans/calculate", response_model=LoanCalculationResult)
 async def calculate_loan_route(data: LoanCalculation):
-    result = calculate_loan(data.amount, data.interest_rate, data.term_months)
+    result = calculate_loan(
+        data.amount, 
+        data.interest_rate, 
+        data.term_months,
+        data.payment_frequency_days
+    )
     return LoanCalculationResult(**result)
 
 @api_router.post("/loans", response_model=Loan)
