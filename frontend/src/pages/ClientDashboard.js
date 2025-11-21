@@ -215,6 +215,28 @@ export default function ClientDashboard({ user, onLogout }) {
                     data-testid="loan-term-input"
                   />
                 </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="payment_frequency">Forma de Pago</Label>
+                  <Select 
+                    value={formData.payment_frequency} 
+                    onValueChange={(val) => setFormData({ ...formData, payment_frequency: val })}
+                  >
+                    <SelectTrigger data-testid="loan-frequency-select">
+                      <SelectValue placeholder="Selecciona frecuencia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {systemConfig?.payment_frequencies
+                        ?.filter(freq => freq.active)
+                        .map((freq) => (
+                          <SelectItem key={freq.id} value={freq.id}>
+                            {freq.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="space-y-2">
                   <Label htmlFor="purpose">Propósito (Opcional)</Label>
                   <Textarea
