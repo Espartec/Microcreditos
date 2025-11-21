@@ -262,7 +262,7 @@ export default function AdminDashboard({ user, onLogout }) {
 
       <main className="container mx-auto px-4 py-8">
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
           <div className="stat-card" data-testid="stat-total-loans">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-600">Total Préstamos</h3>
@@ -301,6 +301,17 @@ export default function AdminDashboard({ user, onLogout }) {
               <DollarSign className="w-5 h-5 text-emerald-600" />
             </div>
             <p className="text-3xl font-bold text-gray-900">${stats?.total_volume || 0}</p>
+          </div>
+
+          <div className="stat-card bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-300" data-testid="stat-monthly-utility">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium text-emerald-800">Utilidad del Mes</h3>
+              <TrendingUp className="w-5 h-5 text-emerald-600" />
+            </div>
+            <p className="text-3xl font-bold text-emerald-700">
+              ${monthlyUtility?.total_interest_collected?.toLocaleString() || 0}
+            </p>
+            <p className="text-xs text-emerald-600 mt-1">Intereses de cuotas pagadas</p>
           </div>
         </div>
 
