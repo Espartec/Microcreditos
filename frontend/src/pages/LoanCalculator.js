@@ -200,24 +200,34 @@ export default function LoanCalculator({ user, onLogout }) {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Cuota Mensual</p>
+                    <p className="text-sm text-gray-600 mb-1">
+                      Cuota {systemConfig?.payment_frequencies?.find(f => f.id === formData.payment_frequency)?.name || 'Mensual'}
+                    </p>
                     <p className="text-2xl font-bold text-blue-600" data-testid="result-monthly-payment">
-                      ${result.monthly_payment}
+                      ${result.payment_amount?.toLocaleString() || result.monthly_payment?.toLocaleString()}
                     </p>
                   </div>
-                  <div className="p-4 bg-emerald-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-1">Total a Pagar</p>
-                    <p className="text-2xl font-bold text-emerald-600" data-testid="result-total-amount">
-                      ${result.total_amount}
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Total de Pagos</p>
+                    <p className="text-2xl font-bold text-purple-600" data-testid="result-total-payments">
+                      {result.total_payments || formData.term_months} pagos
                     </p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-amber-50 rounded-lg">
-                  <p className="text-sm text-gray-600 mb-1">Total de Intereses</p>
-                  <p className="text-2xl font-bold text-amber-600" data-testid="result-total-interest">
-                    ${result.total_interest}
-                  </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-emerald-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Total a Pagar</p>
+                    <p className="text-2xl font-bold text-emerald-600" data-testid="result-total-amount">
+                      ${result.total_amount?.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-amber-50 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-1">Total de Intereses</p>
+                    <p className="text-2xl font-bold text-amber-600" data-testid="result-total-interest">
+                      ${result.total_interest?.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
 
                 <div>
