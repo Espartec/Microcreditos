@@ -415,8 +415,12 @@ async def approve_loan(loan_id: str, approval: LoanApproval):
     if isinstance(loan["created_at"], str):
         loan["created_at"] = datetime.fromisoformat(loan["created_at"])
     
+    # Obtener días entre pagos según la forma de pago del préstamo
+    payment_frequency_days = loan.get("payment_frequency_days", 30)
+    
     for i in range(1, loan["term_months"] + 1):
-        due_date = approval.start_date + timedelta(days=30 * i)
+        # Calcular fecha de vencimiento según la frecuencia de pago
+        due_date = approval.start_date + timedelta(days=payment_frequency_days * i)
         schedule = PaymentSchedule(
             loan_id=loan_id,
             client_id=loan["client_id"],
