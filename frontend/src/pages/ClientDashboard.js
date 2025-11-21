@@ -217,16 +217,6 @@ export default function ClientDashboard({ user, onLogout }) {
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateLoan} className="space-y-4">
-                {systemConfig && (
-                  <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <p className="text-sm text-blue-900">
-                      <strong>Tasa de Interés:</strong> {systemConfig.default_interest_rate}% anual
-                    </p>
-                    <p className="text-xs text-blue-700 mt-1">
-                      El administrador podrá ajustar esta tasa según tu historial crediticio
-                    </p>
-                  </div>
-                )}
                 <div className="space-y-2">
                   <Label htmlFor="amount">Monto</Label>
                   <Input
