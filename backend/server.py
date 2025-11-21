@@ -414,6 +414,13 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
     # Calcular saldo total pendiente
     total_pending = sum(schedule["amount"] for schedule in pending_schedules)
     
+    # VALIDACIÓN: Evitar que el pago sea mayor al saldo pendiente
+    if payment_amount > total_pending:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"El monto a pagar (${payment_amount:,}) es mayor al saldo pendiente (${total_pending:,}). No se pueden registrar pagos en exceso."
+        )
+    
     # Crear el registro de pago
     payment = Payment(
         loan_id=payment_data.loan_id,
