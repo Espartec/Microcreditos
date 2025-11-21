@@ -4,13 +4,16 @@ import axios from "axios";
 import { API } from "@/App";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { DollarSign, TrendingUp, CheckCircle, LogOut, Calendar } from "lucide-react";
+import { DollarSign, TrendingUp, CheckCircle, LogOut, Calendar, Search } from "lucide-react";
 
 export default function LenderDashboard({ user, onLogout }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loans, setLoans] = useState([]);
+  const [filteredLoans, setFilteredLoans] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
