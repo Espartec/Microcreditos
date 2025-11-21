@@ -25,7 +25,14 @@ export default function ClientProfile({ user, onLogout }) {
         axios.get(`${API}/loans?client_id=${clientId}`)
       ]);
       setClient(clientRes.data);
-      setLoans(loansRes.data);
+      
+      // Ordenar préstamos: activos primero, luego aprobados, pendientes, completados al final, rechazados último
+      const sortedLoans = loansRes.data.sort((a, b) => {
+        const statusOrder = { 'active': 1, 'approved': 2, 'pending': 3, 'completed': 4, 'rejected': 5 };
+        return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99);
+      });
+      
+      setLoans(sortedLoans);
     } catch (error) {
       toast.error("Error al cargar perfil del cliente");
     } finally {
