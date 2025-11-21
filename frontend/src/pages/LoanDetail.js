@@ -152,6 +152,44 @@ export default function LoanDetail({ user, onLogout }) {
                 <p className="font-semibold text-lg">{loan.interest_rate}%</p>
               </div>
             </div>
+
+            {/* Desglose de Tarifas Adicionales */}
+            {(loan.system_fee_amount > 0 || loan.insurance_fee_amount > 0) && (
+              <div className="mt-6 pt-6 border-t">
+                <h3 className="text-sm font-semibold text-gray-700 mb-4">Desglose de Tarifas</h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <p className="text-xs text-gray-600 mb-1">Monto Solicitado</p>
+                    <p className="font-bold text-lg text-gray-900">${loan.amount.toLocaleString()}</p>
+                  </div>
+                  {loan.system_fee_amount > 0 && (
+                    <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                      <p className="text-xs text-gray-600 mb-1">Sistematización ({loan.system_fee_percentage}%)</p>
+                      <p className="font-bold text-lg text-purple-700">+${loan.system_fee_amount.toLocaleString()}</p>
+                    </div>
+                  )}
+                  {loan.insurance_fee_amount > 0 && (
+                    <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                      <p className="text-xs text-gray-600 mb-1">Seguro ({loan.insurance_fee_percentage}%)</p>
+                      <p className="font-bold text-lg text-emerald-700">+${loan.insurance_fee_amount.toLocaleString()}</p>
+                    </div>
+                  )}
+                  <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+                    <p className="text-xs text-gray-600 mb-1">Monto Base (Solicitado + Tarifas)</p>
+                    <p className="font-bold text-lg text-indigo-700">${(loan.amount + loan.system_fee_amount + loan.insurance_fee_amount).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                    <p className="text-xs text-gray-600 mb-1">Intereses Totales</p>
+                    <p className="font-bold text-lg text-amber-700">${(loan.total_amount - loan.amount - loan.system_fee_amount - loan.insurance_fee_amount).toLocaleString()}</p>
+                  </div>
+                  <div className="bg-gray-900 p-4 rounded-lg border-2 border-gray-800 md:col-span-2">
+                    <p className="text-xs text-gray-300 mb-1">Monto Total a Pagar</p>
+                    <p className="font-bold text-2xl text-white">${loan.total_amount.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {loan.lender_name && (
               <div className="mt-6 pt-6 border-t">
                 <p className="text-sm text-gray-600">Prestamista: <span className="font-semibold text-lg">{loan.lender_name}</span></p>
