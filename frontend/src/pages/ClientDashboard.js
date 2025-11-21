@@ -287,6 +287,38 @@ export default function ClientDashboard({ user, onLogout }) {
                     data-testid="loan-purpose-input"
                   />
                 </div>
+
+                {/* Preview de Costos */}
+                {loanPreview && (
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-emerald-50 border-2 border-purple-200 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-3">💰 Desglose del Préstamo</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <div>
+                        <p className="text-gray-600">Monto Solicitado</p>
+                        <p className="font-bold text-gray-900">${formData.amount?.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Cuota {systemConfig?.payment_frequencies?.find(f => f.id === formData.payment_frequency)?.name}</p>
+                        <p className="font-bold text-blue-700">${loanPreview.payment_amount?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 text-xs border-t pt-2">
+                      <div>
+                        <p className="text-gray-600">Sistematización</p>
+                        <p className="font-semibold text-purple-700">${loanPreview.system_fee_amount?.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Seguro</p>
+                        <p className="font-semibold text-emerald-700">${loanPreview.insurance_fee_amount?.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Total a Pagar</p>
+                        <p className="font-semibold text-blue-700">${loanPreview.total_amount?.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" data-testid="submit-loan-btn">
                   Enviar Solicitud
                 </Button>
