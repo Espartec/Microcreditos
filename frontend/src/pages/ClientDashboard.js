@@ -32,6 +32,12 @@ export default function ClientDashboard({ user, onLogout }) {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (dialogOpen) {
+      calculatePreview();
+    }
+  }, [formData.amount, formData.term_months, formData.payment_frequency, dialogOpen]);
+
   const fetchData = async () => {
     try {
       const [statsRes, loansRes, proposalsRes, configRes] = await Promise.all([
