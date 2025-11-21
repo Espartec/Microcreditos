@@ -184,51 +184,63 @@ backend:
 
   - task: "Endpoint GET /api/admin/fixed-expenses"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para obtener lista de gastos fijos/recurrentes activos."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint retorna array de gastos fijos activos con todos los campos requeridos (id, description, amount, created_at, created_by, active). Filtrado correcto de gastos activos únicamente."
   
   - task: "Endpoint POST /api/admin/fixed-expenses"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para agregar nuevos gastos fijos a la plantilla."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint crea gastos fijos correctamente con admin_id como query param. Retorna todos los campos requeridos incluyendo ID único y created_at. Gastos creados aparecen inmediatamente en la lista de gastos fijos activos."
   
   - task: "Endpoint DELETE /api/admin/fixed-expenses/{id}"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para eliminar gastos fijos (marca como inactivo)."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint elimina gastos fijos correctamente marcándolos como inactivos (active=false). Los gastos eliminados ya no aparecen en GET /admin/fixed-expenses. Retorna 404 apropiadamente para IDs inexistentes."
   
   - task: "Endpoint PUT /api/admin/fixed-expenses/{id}"
     implemented: true
-    working: "NA"
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Endpoint creado para actualizar descripción y monto de gastos fijos."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED SUCCESSFULLY: Endpoint actualiza gastos fijos correctamente (description y amount). Cambios se reflejan inmediatamente en consultas posteriores. Retorna 404 apropiadamente para IDs inexistentes."
 
 frontend:
   - task: "Panel financiero en AdminDashboard"
