@@ -15,9 +15,15 @@ export default function SystemSettings({ user, onLogout }) {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState({
     default_interest_rate: 12,
-    available_interest_rates: [8, 10, 12, 15, 18, 20]
+    available_interest_rates: [8, 10, 12, 15, 18, 20],
+    default_system_fee: 0.5,
+    available_system_fees: [0.0, 0.5, 1.0, 1.5, 2.0],
+    default_insurance_fee: 1.0,
+    available_insurance_fees: [0.0, 0.5, 1.0, 1.5, 2.0, 3.0]
   });
   const [newRate, setNewRate] = useState("");
+  const [newSystemFee, setNewSystemFee] = useState("");
+  const [newInsuranceFee, setNewInsuranceFee] = useState("");
 
   useEffect(() => {
     fetchConfig();
