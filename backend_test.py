@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import uuid
 
 class LoanAppAPITester:
-    def __init__(self, base_url="https://loan-buddy-54.preview.emergentagent.com"):
+    def __init__(self, base_url="https://financemgr.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tokens = {}  # Store tokens for different users
