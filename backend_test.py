@@ -795,6 +795,11 @@ class LoanAppAPITester:
         self.test_monthly_utility()
         self.test_expenses_crud()
         self.test_financial_comparison()
+        
+        # Run fixed expenses tests
+        print("\n💰 Testing Fixed Expenses System...")
+        self.test_fixed_expenses_crud()
+        self.test_expenses_fixed_integration()
         self.test_data_integrity()
         
         # Print summary
