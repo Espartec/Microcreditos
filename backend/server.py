@@ -483,35 +483,6 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
                 remaining_payment = 0
                 break
         
-        # Si queda excedente, aplicar a futuras cuotas
-        if remaining_payment > 0:
-            next_pending = await db.payment_schedules.find_one(
-                {"loan_id": payment_data.loan_id, "status": PaymentStatus.PENDING},
-                {"_id": 0},
-                sort=[("payment_number", 1)]
-            )
-            
-            if next_pending and next_pending["amount"] > 0:
-                new_amount = max(0, next_pending["amount"] - remaining_payment)
-                
-                if new_amount == 0:
-                    # Si la cuota queda en 0, marcarla como pagada
-                    await db.payment_schedules.update_one(
-                        {"id": next_pending["id"]},
-                        {"$set": {
-                            "status": PaymentStatus.PAID,
-                            "paid_date": datetime.now(timezone.utc).isoformat()
-                        }}
-                    )
-                else:
-                    # Actualizar el monto de la cuota
-                    await db.payment_schedules.update_one(
-                        {"id": next_pending["id"]},
-                        {"$set": {"amount": new_amount}}
-                    )
-        
-        payment.notes += f" | Restante después del pago: ${remaining_payment}"
-        
         # Verificar si todas las cuotas están pagadas después de procesar
         final_check = await db.payment_schedules.count_documents({
             "loan_id": payment_data.loan_id,
