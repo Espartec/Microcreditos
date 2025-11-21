@@ -154,12 +154,18 @@ class LoanCalculation(BaseModel):
     interest_rate: float
     term_months: int
     payment_frequency_days: Optional[int] = 30  # Días entre pagos
+    system_fee_percentage: Optional[float] = 0.5
+    insurance_fee_percentage: Optional[float] = 1.0
 
 class LoanCalculationResult(BaseModel):
     payment_amount: int  # Monto por pago (antes monthly_payment)
     total_payments: int  # Total de pagos a realizar
     total_amount: int
     total_interest: int
+    system_fee_amount: int
+    insurance_fee_amount: int
+    total_fees: int
+    base_amount: int  # Monto original + fees
     schedule: List[dict]
     payment_frequency_days: int
 
