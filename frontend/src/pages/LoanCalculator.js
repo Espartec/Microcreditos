@@ -51,7 +51,9 @@ export default function LoanCalculator({ user, onLogout }) {
         amount: parseFloat(formData.amount),
         interest_rate: systemConfig.default_interest_rate,
         term_months: parseInt(formData.term_months),
-        payment_frequency_days: payment_frequency_days
+        payment_frequency_days: payment_frequency_days,
+        system_fee_percentage: systemConfig.default_system_fee || 0.5,
+        insurance_fee_percentage: systemConfig.default_insurance_fee || 1.0
       });
       setResult(response.data);
       toast.success("Cálculo completado");
