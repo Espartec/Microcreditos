@@ -679,6 +679,98 @@ async def update_schedule_date(schedule_id: str, update: PaymentScheduleUpdate):
         raise HTTPException(status_code=404, detail="Schedule not found")
     return {"message": "Schedule updated successfully"}
 
+@api_router.get("/admin/monthly-profit")
+async def get_monthly_profit(admin_id: str, year: int = None, month: int = None):
+    """Calcula la utilidad (intereses) obtenida en un mes específico"""
+    from datetime import datetime, timezone
+    import calendar
+    
+    # Si no se especifica año/mes, usar el mes actual
+    if not year or not month:
+        now = datetime.now(timezone.utc)
+        year = now.year
+        month = now.month
+    
+    # Calcular el rango de fechas del mes
+    start_date = datetime(year, month, 1, tzinfo=timezone.utc)
+    if month == 12:
+        end_date = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        end_date = datetime(year, month + 1, 1, tzinfo=timezone.utc)
+    
+    # Obtener todos los pagos del mes
+    payments = await db.payments.find({
+        "payment_date": {
+            "$gte": start_date.isoformat(),
+            "$lt": end_date.isoformat()
+        }
+    }, {"_id": 0}).to_list(10000)
+    
+    total_payments = 0
+    total_interest = 0
+    loans_data = {}
+    
+    # Para cada pago, calcular la porción de intereses
+    for payment in payments:
+        loan_id = payment["loan_id"]
+        payment_amount = payment["amount"]
+        total_payments += payment_amount
+        
+        # Obtener información del préstamo si no la tenemos
+        if loan_id not in loans_data:
+            loan = await db.loans.find_one({"id": loan_id}, {"_id": 0})
+            if loan:
+                loans_data[loan_id] = loan
+        
+        if loan_id in loans_data:
+            loan = loans_data[loan_id]
+            
+            # Calcular la tasa mensual
+            monthly_rate = loan["interest_rate"] / 100 / 12
+            
+            # Para simplificar, asumir que cada pago tiene la proporción estándar de intereses
+            # Esto es una aproximación que funciona bien para pagos regulares
+            if loan["monthly_payment"] > 0:
+                # Calcular qué porcentaje del pago mensual normal es interés
+                # Usamos el cálculo de amortización estándar
+                original_amount = loan["amount"]
+                if original_amount > 0:
+                    # Estimación del interés basada en el balance promedio del préstamo
+                    estimated_balance = original_amount * 0.6  # Aproximación del balance promedio
+                    estimated_interest_per_payment = estimated_balance * monthly_rate
+                    interest_ratio = min(estimated_interest_per_payment / loan["monthly_payment"], 0.5)
+                    
+                    # Aplicar esta proporción al pago actual
+                    interest_portion = payment_amount * interest_ratio
+                    total_interest += interest_portion
+    
+    # Obtener estadísticas adicionales del mes
+    month_name = calendar.month_name[month]
+    
+    # Contar préstamos activos completados este mes
+    completed_this_month = await db.loans.count_documents({
+        "status": LoanStatus.COMPLETED,
+        "approved_at": {
+            "$gte": start_date.isoformat(),
+            "$lt": end_date.isoformat()
+        }
+    })
+    
+    # Contar total de pagos en el mes
+    payment_count = len(payments)
+    
+    return {
+        "year": year,
+        "month": month,
+        "month_name": month_name,
+        "total_payments_received": round(total_payments),
+        "estimated_interest_earned": round(total_interest),
+        "estimated_principal_collected": round(total_payments - total_interest),
+        "payment_count": payment_count,
+        "loans_completed": completed_this_month,
+        "profit_margin": round((total_interest / total_payments * 100) if total_payments > 0 else 0, 1)
+    }
+
 # Dashboard Stats
 @api_router.get("/stats/dashboard")
 async def get_dashboard_stats(user_id: str, role: str):
