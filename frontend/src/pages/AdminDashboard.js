@@ -283,7 +283,14 @@ export default function AdminDashboard({ user, onLogout }) {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div>
-                        <CardTitle className="text-xl">${loan.amount.toLocaleString()}</CardTitle>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <CardTitle className="text-xl">${loan.amount.toLocaleString()}</CardTitle>
+                          {loan.loan_number && (
+                            <span className="text-xs font-mono bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                              #{loan.loan_number}
+                            </span>
+                          )}
+                        </div>
                         <CardDescription className="mt-1">
                           Cliente: {loan.client_name}
                         </CardDescription>
