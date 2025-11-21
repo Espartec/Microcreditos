@@ -1288,7 +1288,12 @@ async def create_expense(expense: dict, admin_id: str):
 
 @api_router.get("/admin/expenses")
 async def get_expenses(year: int = None, month: int = None):
-    """Obtener gastos del mes actual o especificado"""
+    """Obtener gastos del mes actual o especificado
+    
+    Incluye automáticamente:
+    - Gastos fijos activos (si no están ya registrados para este mes)
+    - Gastos generales del mes
+    """
     from datetime import datetime, timezone
     
     # Si no se especifica año/mes, usar el mes actual
@@ -1297,10 +1302,36 @@ async def get_expenses(year: int = None, month: int = None):
         year = now.year
         month = now.month
     
+    # Obtener gastos ya registrados para este mes
     expenses = await db.expenses.find({
         "year": year,
         "month": month
     }, {"_id": 0}).to_list(1000)
+    
+    # Obtener IDs de gastos fijos ya registrados este mes
+    fixed_expense_ids = [exp["id"] for exp in expenses if exp.get("is_fixed")]
+    
+    # Obtener gastos fijos activos que no estén registrados este mes
+    fixed_expenses = await db.fixed_expenses.find({
+        "active": True,
+        "id": {"$nin": fixed_expense_ids}
+    }, {"_id": 0}).to_list(1000)
+    
+    # Agregar automáticamente los gastos fijos no registrados
+    for fixed_exp in fixed_expenses:
+        expense_data = {
+            "id": fixed_exp["id"],
+            "description": fixed_exp["description"],
+            "amount": fixed_exp["amount"],
+            "category": None,
+            "month": month,
+            "year": year,
+            "is_fixed": True,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": fixed_exp["created_by"]
+        }
+        await db.expenses.insert_one({**expense_data, "_id": expense_data["id"]})
+        expenses.append(expense_data)
     
     return expenses
 
