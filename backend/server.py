@@ -1254,19 +1254,34 @@ async def get_monthly_utility(year: int = None, month: int = None):
 
 @api_router.post("/admin/expenses")
 async def create_expense(expense: dict, admin_id: str):
-    """Crear un nuevo gasto mensual"""
+    """Crear un nuevo gasto mensual (fijo o general)"""
     from datetime import datetime, timezone
+    
+    is_fixed = expense.get("is_fixed", False)
     
     expense_data = {
         "id": str(uuid.uuid4()),
         "description": expense["description"],
         "amount": int(expense["amount"]),
-        "category": expense["category"],
+        "category": expense.get("category"),
         "month": int(expense["month"]),
         "year": int(expense["year"]),
+        "is_fixed": is_fixed,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": admin_id
     }
+    
+    # Si es gasto fijo, también agregarlo a la lista de gastos fijos
+    if is_fixed:
+        fixed_expense = {
+            "id": expense_data["id"],  # Mismo ID
+            "description": expense_data["description"],
+            "amount": expense_data["amount"],
+            "created_at": expense_data["created_at"],
+            "created_by": admin_id,
+            "active": True
+        }
+        await db.fixed_expenses.insert_one({**fixed_expense, "_id": fixed_expense["id"]})
     
     await db.expenses.insert_one({**expense_data, "_id": expense_data["id"]})
     return expense_data
