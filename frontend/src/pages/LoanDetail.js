@@ -136,12 +136,16 @@ export default function LoanDetail({ user, onLogout }) {
                 <p className="font-semibold text-lg" data-testid="loan-client">{loan.client_name}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600 mb-1">Cuota Mensual</p>
+                <p className="text-sm text-gray-600 mb-1">
+                  Cuota {loan.payment_frequency_name || 'Mensual'}
+                </p>
                 <p className="font-semibold text-lg">${loan.monthly_payment}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 mb-1">Plazo</p>
-                <p className="font-semibold text-lg">{loan.term_months} meses</p>
+                <p className="font-semibold text-lg">
+                  {loan.term_months} ({loan.payment_frequency_name?.toLowerCase() || 'mensual'})
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 mb-1">Tasa de Interés</p>
