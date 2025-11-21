@@ -999,6 +999,16 @@ async def update_system_config(config_update: SystemConfigUpdate, admin_id: str)
     if config_update.payment_frequencies is not None:
         update_data["payment_frequencies"] = config_update.payment_frequencies
     
+    # Actualizar fees si se proporcionan
+    if config_update.default_system_fee is not None:
+        update_data["default_system_fee"] = config_update.default_system_fee
+    if config_update.available_system_fees is not None:
+        update_data["available_system_fees"] = config_update.available_system_fees
+    if config_update.default_insurance_fee is not None:
+        update_data["default_insurance_fee"] = config_update.default_insurance_fee
+    if config_update.available_insurance_fees is not None:
+        update_data["available_insurance_fees"] = config_update.available_insurance_fees
+    
     if config:
         await db.system_config.update_one({"id": config["id"]}, {"$set": update_data})
     else:
