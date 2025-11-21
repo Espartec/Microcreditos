@@ -290,6 +290,209 @@ class LoanAppAPITester:
             else:
                 self.log_test("Admin Dashboard Stats", False, f"Status: {response.status_code if response else 'No response'}")
 
+    def test_monthly_utility(self):
+        """Test monthly utility endpoint"""
+        print("\n🔍 Testing Monthly Utility Endpoint...")
+        
+        # Test without parameters (current month)
+        response = self.make_request('GET', 'admin/monthly-utility')
+        if response and response.status_code == 200:
+            result = response.json()
+            required_fields = ['month', 'year', 'total_interest_collected', 'total_payments', 'active_loans_count', 'completed_loans_count']
+            if all(field in result for field in required_fields):
+                self.log_test("Monthly Utility - Current Month", True)
+            else:
+                missing_fields = [field for field in required_fields if field not in result]
+                self.log_test("Monthly Utility - Current Month", False, f"Missing fields: {missing_fields}")
+        else:
+            self.log_test("Monthly Utility - Current Month", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test with specific year and month
+        params = {"year": 2024, "month": 11}
+        response = self.make_request('GET', 'admin/monthly-utility', params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            if result.get('year') == 2024 and result.get('month') == 11:
+                self.log_test("Monthly Utility - Specific Month", True)
+            else:
+                self.log_test("Monthly Utility - Specific Month", False, f"Wrong month/year returned: {result.get('month')}/{result.get('year')}")
+        else:
+            self.log_test("Monthly Utility - Specific Month", False, f"Status: {response.status_code if response else 'No response'}")
+
+    def test_expenses_crud(self):
+        """Test expenses CRUD operations"""
+        print("\n🔍 Testing Expenses CRUD Operations...")
+        
+        if 'admin' not in self.users:
+            self.log_test("Expenses CRUD", False, "No admin user available")
+            return
+        
+        admin_id = self.users['admin']['id']
+        created_expense_id = None
+        
+        # Test POST /api/admin/expenses - Create expense
+        expense_data = {
+            "description": "Gastos de oficina - Prueba",
+            "amount": 25000,
+            "category": "Operaciones",
+            "month": 11,
+            "year": 2024
+        }
+        
+        params = {"admin_id": admin_id}
+        response = self.make_request('POST', 'admin/expenses', expense_data, params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            if 'id' in result and 'created_at' in result and result['amount'] == 25000:
+                created_expense_id = result['id']
+                self.log_test("Create Expense", True)
+            else:
+                self.log_test("Create Expense", False, "Missing required fields in response")
+        else:
+            self.log_test("Create Expense", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test GET /api/admin/expenses - Get expenses without parameters (current month)
+        response = self.make_request('GET', 'admin/expenses')
+        if response and response.status_code == 200:
+            result = response.json()
+            if isinstance(result, list):
+                self.log_test("Get Expenses - Current Month", True)
+            else:
+                self.log_test("Get Expenses - Current Month", False, "Response is not an array")
+        else:
+            self.log_test("Get Expenses - Current Month", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test GET /api/admin/expenses - Get expenses with specific year and month
+        params = {"year": 2024, "month": 11}
+        response = self.make_request('GET', 'admin/expenses', params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            if isinstance(result, list):
+                # Check if our created expense is in the list
+                found_expense = any(exp.get('id') == created_expense_id for exp in result if created_expense_id)
+                if found_expense or not created_expense_id:
+                    self.log_test("Get Expenses - Specific Month", True)
+                else:
+                    self.log_test("Get Expenses - Specific Month", False, "Created expense not found in results")
+            else:
+                self.log_test("Get Expenses - Specific Month", False, "Response is not an array")
+        else:
+            self.log_test("Get Expenses - Specific Month", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test DELETE /api/admin/expenses/{expense_id} - Delete expense
+        if created_expense_id:
+            response = self.make_request('DELETE', f'admin/expenses/{created_expense_id}')
+            if response and response.status_code == 200:
+                self.log_test("Delete Expense", True)
+                
+                # Verify expense was deleted by trying to delete again (should return 404)
+                response = self.make_request('DELETE', f'admin/expenses/{created_expense_id}')
+                if response and response.status_code == 404:
+                    self.log_test("Delete Non-existent Expense (404)", True)
+                else:
+                    self.log_test("Delete Non-existent Expense (404)", False, f"Expected 404, got {response.status_code if response else 'No response'}")
+            else:
+                self.log_test("Delete Expense", False, f"Status: {response.status_code if response else 'No response'}")
+        else:
+            self.log_test("Delete Expense", False, "No expense ID to delete")
+
+    def test_financial_comparison(self):
+        """Test financial comparison endpoint"""
+        print("\n🔍 Testing Financial Comparison Endpoint...")
+        
+        # Test without parameters (current month)
+        response = self.make_request('GET', 'admin/financial-comparison')
+        if response and response.status_code == 200:
+            result = response.json()
+            required_fields = ['month', 'year', 'total_utility', 'total_expenses', 'net_profit', 'expenses_breakdown']
+            if all(field in result for field in required_fields):
+                # Verify net_profit calculation
+                expected_net_profit = result['total_utility'] - result['total_expenses']
+                if result['net_profit'] == expected_net_profit:
+                    self.log_test("Financial Comparison - Current Month", True)
+                else:
+                    self.log_test("Financial Comparison - Current Month", False, f"Net profit calculation incorrect: {result['net_profit']} != {expected_net_profit}")
+            else:
+                missing_fields = [field for field in required_fields if field not in result]
+                self.log_test("Financial Comparison - Current Month", False, f"Missing fields: {missing_fields}")
+        else:
+            self.log_test("Financial Comparison - Current Month", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test with specific year and month
+        params = {"year": 2024, "month": 11}
+        response = self.make_request('GET', 'admin/financial-comparison', params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            if result.get('year') == 2024 and result.get('month') == 11:
+                # Verify expenses_breakdown is an array
+                if isinstance(result.get('expenses_breakdown'), list):
+                    self.log_test("Financial Comparison - Specific Month", True)
+                else:
+                    self.log_test("Financial Comparison - Specific Month", False, "expenses_breakdown is not an array")
+            else:
+                self.log_test("Financial Comparison - Specific Month", False, f"Wrong month/year returned: {result.get('month')}/{result.get('year')}")
+        else:
+            self.log_test("Financial Comparison - Specific Month", False, f"Status: {response.status_code if response else 'No response'}")
+
+    def test_data_integrity(self):
+        """Test data integrity across financial endpoints"""
+        print("\n🔍 Testing Data Integrity...")
+        
+        if 'admin' not in self.users:
+            self.log_test("Data Integrity", False, "No admin user available")
+            return
+        
+        # Create a test expense for data integrity testing
+        admin_id = self.users['admin']['id']
+        expense_data = {
+            "description": "Prueba de integridad",
+            "amount": 15000,
+            "category": "Testing",
+            "month": 12,
+            "year": 2024
+        }
+        
+        params = {"admin_id": admin_id}
+        expense_response = self.make_request('POST', 'admin/expenses', expense_data, params=params)
+        
+        if not expense_response or expense_response.status_code != 200:
+            self.log_test("Data Integrity", False, "Could not create test expense")
+            return
+        
+        # Get financial comparison for the same month
+        params = {"year": 2024, "month": 12}
+        comparison_response = self.make_request('GET', 'admin/financial-comparison', params=params)
+        
+        if comparison_response and comparison_response.status_code == 200:
+            comparison_result = comparison_response.json()
+            
+            # Get expenses for the same month
+            expenses_response = self.make_request('GET', 'admin/expenses', params=params)
+            
+            if expenses_response and expenses_response.status_code == 200:
+                expenses_result = expenses_response.json()
+                
+                # Calculate total expenses manually
+                manual_total = sum(exp['amount'] for exp in expenses_result)
+                
+                # Compare with financial comparison total
+                if comparison_result['total_expenses'] == manual_total:
+                    self.log_test("Data Integrity - Expense Totals Match", True)
+                else:
+                    self.log_test("Data Integrity - Expense Totals Match", False, 
+                                f"Totals don't match: comparison={comparison_result['total_expenses']}, manual={manual_total}")
+                
+                # Verify amounts are integers
+                all_integers = all(isinstance(exp['amount'], int) for exp in expenses_result)
+                if all_integers:
+                    self.log_test("Data Integrity - All Amounts Are Integers", True)
+                else:
+                    self.log_test("Data Integrity - All Amounts Are Integers", False, "Some amounts are not integers")
+            else:
+                self.log_test("Data Integrity", False, "Could not get expenses for comparison")
+        else:
+            self.log_test("Data Integrity", False, "Could not get financial comparison")
+
     def test_get_users(self):
         """Test getting users"""
         print("\n🔍 Testing Get Users...")
