@@ -441,6 +441,260 @@ class LoanAppAPITester:
         else:
             self.log_test("Financial Comparison - Specific Month", False, f"Status: {response.status_code if response else 'No response'}")
 
+    def test_fixed_expenses_crud(self):
+        """Test fixed expenses CRUD operations"""
+        print("\n🔍 Testing Fixed Expenses CRUD Operations...")
+        
+        if 'admin' not in self.users:
+            self.log_test("Fixed Expenses CRUD", False, "No admin user available")
+            return
+        
+        admin_id = self.users['admin']['id']
+        created_fixed_expense_ids = []
+        
+        # Test POST /api/admin/fixed-expenses - Create fixed expense
+        fixed_expense_data = {
+            "description": "Alquiler de oficina - Mensual",
+            "amount": 120000
+        }
+        
+        params = {"admin_id": admin_id}
+        response = self.make_request('POST', 'admin/fixed-expenses', fixed_expense_data, params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            required_fields = ['id', 'description', 'amount', 'created_at', 'created_by', 'active']
+            if all(field in result for field in required_fields):
+                if result['amount'] == 120000 and result['active'] == True:
+                    created_fixed_expense_ids.append(result['id'])
+                    self.log_test("Create Fixed Expense", True)
+                else:
+                    self.log_test("Create Fixed Expense", False, f"Incorrect amount or active status: amount={result.get('amount')}, active={result.get('active')}")
+            else:
+                missing_fields = [field for field in required_fields if field not in result]
+                self.log_test("Create Fixed Expense", False, f"Missing required fields: {missing_fields}")
+        else:
+            self.log_test("Create Fixed Expense", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Create another fixed expense for testing
+        fixed_expense_data2 = {
+            "description": "Servicios públicos - Mensual",
+            "amount": 45000
+        }
+        
+        response = self.make_request('POST', 'admin/fixed-expenses', fixed_expense_data2, params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            created_fixed_expense_ids.append(result['id'])
+            self.log_test("Create Second Fixed Expense", True)
+        else:
+            self.log_test("Create Second Fixed Expense", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test GET /api/admin/fixed-expenses - Get all active fixed expenses
+        response = self.make_request('GET', 'admin/fixed-expenses')
+        if response and response.status_code == 200:
+            result = response.json()
+            if isinstance(result, list):
+                # Check if our created expenses are in the list
+                found_expenses = [exp for exp in result if exp.get('id') in created_fixed_expense_ids]
+                if len(found_expenses) >= len(created_fixed_expense_ids):
+                    # Verify all returned expenses have required fields
+                    required_fields = ['id', 'description', 'amount', 'created_at', 'created_by', 'active']
+                    all_have_fields = all(all(field in exp for field in required_fields) for exp in result)
+                    if all_have_fields:
+                        self.log_test("Get Fixed Expenses", True)
+                    else:
+                        self.log_test("Get Fixed Expenses", False, "Some expenses missing required fields")
+                else:
+                    self.log_test("Get Fixed Expenses", False, f"Created expenses not found in results. Expected: {len(created_fixed_expense_ids)}, Found: {len(found_expenses)}")
+            else:
+                self.log_test("Get Fixed Expenses", False, "Response is not an array")
+        else:
+            self.log_test("Get Fixed Expenses", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test PUT /api/admin/fixed-expenses/{expense_id} - Update fixed expense
+        if created_fixed_expense_ids:
+            expense_id = created_fixed_expense_ids[0]
+            update_data = {
+                "description": "Alquiler de oficina - Actualizado",
+                "amount": 135000
+            }
+            
+            response = self.make_request('PUT', f'admin/fixed-expenses/{expense_id}', update_data)
+            if response and response.status_code == 200:
+                self.log_test("Update Fixed Expense", True)
+                
+                # Verify the update by getting the fixed expenses again
+                time.sleep(0.5)
+                response = self.make_request('GET', 'admin/fixed-expenses')
+                if response and response.status_code == 200:
+                    result = response.json()
+                    updated_expense = next((exp for exp in result if exp.get('id') == expense_id), None)
+                    if updated_expense and updated_expense['description'] == "Alquiler de oficina - Actualizado" and updated_expense['amount'] == 135000:
+                        self.log_test("Verify Fixed Expense Update", True)
+                    else:
+                        self.log_test("Verify Fixed Expense Update", False, "Updated values not reflected")
+                else:
+                    self.log_test("Verify Fixed Expense Update", False, "Could not retrieve updated expense")
+            else:
+                self.log_test("Update Fixed Expense", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test PUT with non-existent ID (should return 404)
+        fake_id = str(uuid.uuid4())
+        update_data = {"description": "Test", "amount": 1000}
+        response = self.make_request('PUT', f'admin/fixed-expenses/{fake_id}', update_data)
+        if response and response.status_code == 404:
+            self.log_test("Update Non-existent Fixed Expense (404)", True)
+        else:
+            self.log_test("Update Non-existent Fixed Expense (404)", False, f"Expected 404, got {response.status_code if response else 'No response'}")
+        
+        # Test DELETE /api/admin/fixed-expenses/{expense_id} - Delete (deactivate) fixed expense
+        if created_fixed_expense_ids:
+            expense_id = created_fixed_expense_ids[0]
+            response = self.make_request('DELETE', f'admin/fixed-expenses/{expense_id}')
+            if response and response.status_code == 200:
+                self.log_test("Delete Fixed Expense", True)
+                
+                # Verify the expense no longer appears in active list
+                time.sleep(0.5)
+                response = self.make_request('GET', 'admin/fixed-expenses')
+                if response and response.status_code == 200:
+                    result = response.json()
+                    deleted_expense = next((exp for exp in result if exp.get('id') == expense_id), None)
+                    if deleted_expense is None:
+                        self.log_test("Verify Fixed Expense Deletion", True)
+                    else:
+                        self.log_test("Verify Fixed Expense Deletion", False, "Deleted expense still appears in active list")
+                else:
+                    self.log_test("Verify Fixed Expense Deletion", False, "Could not retrieve fixed expenses after deletion")
+            else:
+                self.log_test("Delete Fixed Expense", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test DELETE with non-existent ID (should return 404)
+        fake_id = str(uuid.uuid4())
+        response = self.make_request('DELETE', f'admin/fixed-expenses/{fake_id}')
+        if response and response.status_code == 404:
+            self.log_test("Delete Non-existent Fixed Expense (404)", True)
+        else:
+            self.log_test("Delete Non-existent Fixed Expense (404)", False, f"Expected 404, got {response.status_code if response else 'No response'}")
+        
+        # Store remaining fixed expense IDs for integration tests
+        self.created_fixed_expense_ids = created_fixed_expense_ids[1:] if len(created_fixed_expense_ids) > 1 else []
+
+    def test_expenses_fixed_integration(self):
+        """Test integration between fixed expenses and regular expenses"""
+        print("\n🔍 Testing Fixed Expenses Integration...")
+        
+        if 'admin' not in self.users:
+            self.log_test("Fixed Expenses Integration", False, "No admin user available")
+            return
+        
+        admin_id = self.users['admin']['id']
+        
+        # Create a fixed expense first
+        fixed_expense_data = {
+            "description": "Internet - Mensual",
+            "amount": 35000
+        }
+        
+        params = {"admin_id": admin_id}
+        response = self.make_request('POST', 'admin/fixed-expenses', fixed_expense_data, params=params)
+        if not response or response.status_code != 200:
+            self.log_test("Fixed Expenses Integration", False, "Could not create fixed expense for integration test")
+            return
+        
+        fixed_expense = response.json()
+        fixed_expense_id = fixed_expense['id']
+        
+        # Test creating a regular expense with is_fixed=true
+        expense_data = {
+            "description": "Seguro - Mensual",
+            "amount": 28000,
+            "category": "Seguros",
+            "month": 12,
+            "year": 2024,
+            "is_fixed": True
+        }
+        
+        response = self.make_request('POST', 'admin/expenses', expense_data, params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            if result.get('is_fixed') == True:
+                self.log_test("Create Expense with is_fixed=true", True)
+                
+                # Verify it also appears in fixed expenses list
+                time.sleep(0.5)
+                fixed_response = self.make_request('GET', 'admin/fixed-expenses')
+                if fixed_response and fixed_response.status_code == 200:
+                    fixed_list = fixed_response.json()
+                    found_in_fixed = any(exp.get('id') == result['id'] for exp in fixed_list)
+                    if found_in_fixed:
+                        self.log_test("Fixed Expense Auto-created from is_fixed=true", True)
+                    else:
+                        self.log_test("Fixed Expense Auto-created from is_fixed=true", False, "Expense not found in fixed expenses list")
+                else:
+                    self.log_test("Fixed Expense Auto-created from is_fixed=true", False, "Could not retrieve fixed expenses")
+            else:
+                self.log_test("Create Expense with is_fixed=true", False, f"is_fixed not set correctly: {result.get('is_fixed')}")
+        else:
+            self.log_test("Create Expense with is_fixed=true", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test creating a regular expense with is_fixed=false
+        expense_data_regular = {
+            "description": "Gastos de viaje - Una vez",
+            "amount": 85000,
+            "category": "Viajes",
+            "month": 12,
+            "year": 2024,
+            "is_fixed": False
+        }
+        
+        response = self.make_request('POST', 'admin/expenses', expense_data_regular, params=params)
+        if response and response.status_code == 200:
+            result = response.json()
+            if result.get('is_fixed') == False:
+                self.log_test("Create Expense with is_fixed=false", True)
+                
+                # Verify it does NOT appear in fixed expenses list
+                time.sleep(0.5)
+                fixed_response = self.make_request('GET', 'admin/fixed-expenses')
+                if fixed_response and fixed_response.status_code == 200:
+                    fixed_list = fixed_response.json()
+                    found_in_fixed = any(exp.get('id') == result['id'] for exp in fixed_list)
+                    if not found_in_fixed:
+                        self.log_test("Regular Expense NOT in Fixed List", True)
+                    else:
+                        self.log_test("Regular Expense NOT in Fixed List", False, "Regular expense incorrectly appears in fixed expenses list")
+                else:
+                    self.log_test("Regular Expense NOT in Fixed List", False, "Could not retrieve fixed expenses")
+            else:
+                self.log_test("Create Expense with is_fixed=false", False, f"is_fixed not set correctly: {result.get('is_fixed')}")
+        else:
+            self.log_test("Create Expense with is_fixed=false", False, f"Status: {response.status_code if response else 'No response'}")
+        
+        # Test GET /api/admin/expenses includes fixed expenses automatically
+        params = {"year": 2024, "month": 12}
+        response = self.make_request('GET', 'admin/expenses', params=params)
+        if response and response.status_code == 200:
+            expenses_list = response.json()
+            
+            # Check if fixed expenses are included with is_fixed=true
+            fixed_expenses_in_list = [exp for exp in expenses_list if exp.get('is_fixed') == True]
+            regular_expenses_in_list = [exp for exp in expenses_list if exp.get('is_fixed') == False]
+            
+            if len(fixed_expenses_in_list) > 0:
+                self.log_test("Fixed Expenses Auto-included in Monthly Expenses", True)
+                
+                # Verify is_fixed field is present in all expenses
+                all_have_is_fixed = all('is_fixed' in exp for exp in expenses_list)
+                if all_have_is_fixed:
+                    self.log_test("All Expenses Have is_fixed Field", True)
+                else:
+                    self.log_test("All Expenses Have is_fixed Field", False, "Some expenses missing is_fixed field")
+            else:
+                self.log_test("Fixed Expenses Auto-included in Monthly Expenses", False, "No fixed expenses found in monthly expenses list")
+        else:
+            self.log_test("Fixed Expenses Auto-included in Monthly Expenses", False, f"Status: {response.status_code if response else 'No response'}")
+
     def test_data_integrity(self):
         """Test data integrity across financial endpoints"""
         print("\n🔍 Testing Data Integrity...")
