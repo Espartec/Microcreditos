@@ -887,11 +887,30 @@ async def get_system_config():
             "id": str(uuid.uuid4()),
             "default_interest_rate": 12.0,
             "available_interest_rates": [8.0, 10.0, 12.0, 15.0, 18.0, 20.0],
+            "payment_frequencies": [
+                {"id": "daily", "name": "Diario", "days": 1, "active": True},
+                {"id": "every_other_day", "name": "Día de por medio", "days": 2, "active": True},
+                {"id": "weekly", "name": "Semanal", "days": 7, "active": True},
+                {"id": "monthly", "name": "Mensual", "days": 30, "active": True}
+            ],
             "updated_at": datetime.now(timezone.utc).isoformat(),
             "updated_by": "system"
         }
         await db.system_config.insert_one(default_config)
         config = default_config
+    
+    # Asegurar que payment_frequencies existe
+    if "payment_frequencies" not in config or not config["payment_frequencies"]:
+        config["payment_frequencies"] = [
+            {"id": "daily", "name": "Diario", "days": 1, "active": True},
+            {"id": "every_other_day", "name": "Día de por medio", "days": 2, "active": True},
+            {"id": "weekly", "name": "Semanal", "days": 7, "active": True},
+            {"id": "monthly", "name": "Mensual", "days": 30, "active": True}
+        ]
+        await db.system_config.update_one(
+            {"id": config["id"]},
+            {"$set": {"payment_frequencies": config["payment_frequencies"]}}
+        )
     
     if isinstance(config.get("updated_at"), str):
         config["updated_at"] = datetime.fromisoformat(config["updated_at"])
@@ -909,10 +928,22 @@ async def update_system_config(config_update: SystemConfigUpdate, admin_id: str)
         "updated_by": admin_id
     }
     
+    # Actualizar payment_frequencies si se proporcionan
+    if config_update.payment_frequencies is not None:
+        update_data["payment_frequencies"] = config_update.payment_frequencies
+    
     if config:
         await db.system_config.update_one({"id": config["id"]}, {"$set": update_data})
     else:
         update_data["id"] = str(uuid.uuid4())
+        # Agregar frecuencias por defecto si no se proporcionan
+        if "payment_frequencies" not in update_data:
+            update_data["payment_frequencies"] = [
+                {"id": "daily", "name": "Diario", "days": 1, "active": True},
+                {"id": "every_other_day", "name": "Día de por medio", "days": 2, "active": True},
+                {"id": "weekly", "name": "Semanal", "days": 7, "active": True},
+                {"id": "monthly", "name": "Mensual", "days": 30, "active": True}
+            ]
         await db.system_config.insert_one(update_data)
     
     return {"message": "Configuración actualizada exitosamente"}
