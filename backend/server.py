@@ -1309,7 +1309,8 @@ async def get_expenses(year: int = None, month: int = None):
     }, {"_id": 0}).to_list(1000)
     
     # Obtener IDs de gastos fijos ya registrados este mes
-    fixed_expense_ids = [exp["id"] for exp in expenses if exp.get("is_fixed")]
+    # Usar fixed_expense_id si existe, sino usar id (compatibilidad con datos antiguos)
+    fixed_expense_ids = [exp.get("fixed_expense_id", exp["id"]) for exp in expenses if exp.get("is_fixed")]
     
     # Obtener gastos fijos activos que no estén registrados este mes
     fixed_expenses = await db.fixed_expenses.find({
