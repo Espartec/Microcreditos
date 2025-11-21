@@ -72,46 +72,6 @@ export default function AdminDashboard({ user, onLogout }) {
       console.error("Error al cargar datos financieros:", error);
     }
   };
-  
-  const handleAddExpense = async () => {
-    if (!newExpense.description || !newExpense.amount || !newExpense.category) {
-      toast.error("Por favor completa todos los campos");
-      return;
-    }
-    
-    try {
-      const now = new Date();
-      await axios.post(
-        `${API}/admin/expenses?admin_id=${user.id}`,
-        {
-          description: newExpense.description,
-          amount: parseInt(newExpense.amount),
-          category: newExpense.category,
-          month: now.getMonth() + 1,
-          year: now.getFullYear()
-        }
-      );
-      toast.success("Gasto registrado exitosamente");
-      setNewExpense({ description: "", amount: "", category: "" });
-      fetchFinancialData();
-    } catch (error) {
-      toast.error("Error al registrar gasto");
-    }
-  };
-  
-  const handleDeleteExpense = async (expenseId) => {
-    if (!window.confirm("¿Estás seguro de eliminar este gasto?")) {
-      return;
-    }
-    
-    try {
-      await axios.delete(`${API}/admin/expenses/${expenseId}`);
-      toast.success("Gasto eliminado");
-      fetchFinancialData();
-    } catch (error) {
-      toast.error("Error al eliminar gasto");
-    }
-  };
 
   const handleOpenProposal = (loan) => {
     setSelectedLoan(loan);
