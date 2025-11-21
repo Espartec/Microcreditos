@@ -175,19 +175,30 @@ def create_token(user_id: str) -> str:
     to_encode = {"sub": user_id, "exp": expire}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def calculate_loan(amount: int, interest_rate: float, term_months: int, payment_frequency_days: int = 30) -> dict:
+def calculate_loan(amount: int, interest_rate: float, term_months: int, payment_frequency_days: int = 30, 
+                   system_fee_percentage: float = 0.5, insurance_fee_percentage: float = 1.0) -> dict:
     """
-    Calcula un préstamo con frecuencia de pago flexible
+    Calcula un préstamo con frecuencia de pago flexible y cargos adicionales
     
     Args:
-        amount: Monto del préstamo
+        amount: Monto del préstamo solicitado
         interest_rate: Tasa de interés anual (%)
-        term_months: Cantidad de pagos a realizar (antes llamado "meses" pero ahora es número de cuotas)
-        payment_frequency_days: Días entre cada pago (1=diario, 2=día por medio, 7=semanal, 30=mensual)
+        term_months: Cantidad de pagos a realizar
+        payment_frequency_days: Días entre cada pago
+        system_fee_percentage: Porcentaje de sistematización (default 0.5%)
+        insurance_fee_percentage: Porcentaje de seguro (default 1.0%)
     
     Returns:
-        dict con payment_amount, total_payments, total_amount, total_interest, schedule
+        dict con payment_amount, total_payments, total_amount, total_interest, fees, schedule
     """
+    # Calcular cargos adicionales
+    system_fee_amount = round(amount * (system_fee_percentage / 100))
+    insurance_fee_amount = round(amount * (insurance_fee_percentage / 100))
+    total_fees = system_fee_amount + insurance_fee_amount
+    
+    # Monto base para calcular intereses (monto original + cargos)
+    base_amount = amount + total_fees
+    
     # El término "term_months" ahora representa la CANTIDAD DE PAGOS, no meses
     total_payments = term_months
     
@@ -196,19 +207,19 @@ def calculate_loan(amount: int, interest_rate: float, term_months: int, payment_
     period_rate = annual_rate * (payment_frequency_days / 365)
     
     if period_rate == 0:
-        payment_amount = amount / total_payments
+        payment_amount = base_amount / total_payments
     else:
-        # Fórmula de amortización ajustada por período
-        payment_amount = amount * (period_rate * (1 + period_rate)**total_payments) / ((1 + period_rate)**total_payments - 1)
+        # Fórmula de amortización ajustada por período sobre el monto base
+        payment_amount = base_amount * (period_rate * (1 + period_rate)**total_payments) / ((1 + period_rate)**total_payments - 1)
     
     # Redondear a enteros
     payment_amount = round(payment_amount)
     total_amount = payment_amount * total_payments
-    total_interest = total_amount - amount
+    total_interest = total_amount - base_amount
     
     # Generar schedule de pagos
     schedule = []
-    balance = amount
+    balance = base_amount
     for i in range(1, total_payments + 1):
         interest_payment = balance * period_rate
         principal_payment = payment_amount - interest_payment
@@ -226,6 +237,10 @@ def calculate_loan(amount: int, interest_rate: float, term_months: int, payment_
         "total_payments": total_payments,
         "total_amount": total_amount,
         "total_interest": total_interest,
+        "system_fee_amount": system_fee_amount,
+        "insurance_fee_amount": insurance_fee_amount,
+        "total_fees": total_fees,
+        "base_amount": base_amount,  # Monto original + fees
         "schedule": schedule,
         "payment_frequency_days": payment_frequency_days
     }
