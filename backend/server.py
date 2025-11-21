@@ -314,8 +314,26 @@ async def calculate_loan_route(data: LoanCalculation):
 
 @api_router.post("/loans", response_model=Loan)
 async def create_loan(loan_data: LoanCreate, client_id: str, client_name: str):
-    # Calculate loan details
-    calc = calculate_loan(loan_data.amount, loan_data.interest_rate, loan_data.term_months)
+    # Obtener información de la frecuencia de pago desde la configuración
+    config = await db.system_config.find_one({}, {"_id": 0})
+    
+    payment_freq_days = 30  # Default mensual
+    payment_freq_name = "Mensual"
+    
+    if config and "payment_frequencies" in config:
+        for freq in config["payment_frequencies"]:
+            if freq["id"] == loan_data.payment_frequency and freq.get("active", True):
+                payment_freq_days = freq["days"]
+                payment_freq_name = freq["name"]
+                break
+    
+    # Calculate loan details con la frecuencia
+    calc = calculate_loan(
+        loan_data.amount, 
+        loan_data.interest_rate, 
+        loan_data.term_months,
+        payment_freq_days
+    )
     
     loan = Loan(
         client_id=client_id,
@@ -323,10 +341,13 @@ async def create_loan(loan_data: LoanCreate, client_id: str, client_name: str):
         amount=loan_data.amount,
         interest_rate=loan_data.interest_rate,
         term_months=loan_data.term_months,
-        monthly_payment=calc["monthly_payment"],
+        monthly_payment=calc["payment_amount"],
         total_amount=calc["total_amount"],
         status=LoanStatus.PENDING,
-        purpose=loan_data.purpose
+        purpose=loan_data.purpose,
+        payment_frequency=loan_data.payment_frequency,
+        payment_frequency_name=payment_freq_name,
+        payment_frequency_days=payment_freq_days
     )
     
     loan_doc = loan.model_dump()
