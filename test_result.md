@@ -182,6 +182,54 @@ backend:
         agent: "testing"
         comment: "✅ TESTED SUCCESSFULLY: Endpoint funciona perfectamente. Retorna month, year, total_utility, total_expenses, net_profit, expenses_breakdown. Cálculo de net_profit es correcto (utility - expenses). expenses_breakdown es array con categorías y montos. Integridad de datos verificada."
 
+  - task: "Endpoint GET /api/admin/fixed-expenses"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para obtener lista de gastos fijos/recurrentes activos."
+  
+  - task: "Endpoint POST /api/admin/fixed-expenses"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para agregar nuevos gastos fijos a la plantilla."
+  
+  - task: "Endpoint DELETE /api/admin/fixed-expenses/{id}"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para eliminar gastos fijos (marca como inactivo)."
+  
+  - task: "Endpoint PUT /api/admin/fixed-expenses/{id}"
+    implemented: true
+    working: "NA"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Endpoint creado para actualizar descripción y monto de gastos fijos."
+
 frontend:
   - task: "Panel financiero en AdminDashboard"
     implemented: true
@@ -197,6 +245,21 @@ frontend:
       - working: "NA"
         agent: "main"
         comment: "Implementado panel financiero completo con: 1) Tarjetas de utilidad mensual, gastos y ganancia neta 2) Formulario para registrar nuevos gastos 3) Lista de gastos con opción de eliminar 4) Desglose de gastos por categoría. Todos los estados y funciones agregados correctamente."
+      - working: "NA"
+        agent: "main"
+        comment: "Simplificado: Removido formulario de gastos, agregado botón que redirija a /gastos. Mantiene visualización de resumen financiero (3 tarjetas + resumen rápido)."
+  
+  - task: "Página ExpensesPage (/gastos)"
+    implemented: true
+    working: "NA"
+    file: "ExpensesPage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Nueva página creada con gestión completa de gastos: 1) Sección de Gastos Fijos con CRUD completo 2) Sección de Gastos Generales del mes 3) Formulario con toggle Fijo/General 4) Tarjetas de resumen. Ruta agregada en App.js."
 
 metadata:
   created_by: "main_agent"
