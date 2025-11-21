@@ -58,6 +58,27 @@ export default function ClientDashboard({ user, onLogout }) {
     }
   };
 
+  const calculatePreview = async () => {
+    if (!formData.amount || !formData.term_months || !systemConfig) return;
+    
+    try {
+      const selectedFreq = systemConfig.payment_frequencies?.find(f => f.id === formData.payment_frequency);
+      const payment_frequency_days = selectedFreq?.days || 30;
+      
+      const response = await axios.post(`${API}/loans/calculate`, {
+        amount: parseFloat(formData.amount),
+        interest_rate: systemConfig.default_interest_rate,
+        term_months: parseInt(formData.term_months),
+        payment_frequency_days: payment_frequency_days,
+        system_fee_percentage: systemConfig.default_system_fee || 0.5,
+        insurance_fee_percentage: systemConfig.default_insurance_fee || 1.0
+      });
+      setLoanPreview(response.data);
+    } catch (error) {
+      console.error("Error calculando preview:", error);
+    }
+  };
+
   const handleCreateLoan = async (e) => {
     e.preventDefault();
     try {
@@ -74,6 +95,7 @@ export default function ClientDashboard({ user, onLogout }) {
       toast.success("Solicitud de préstamo creada exitosamente");
       setDialogOpen(false);
       setFormData({ amount: "", term_months: "", purpose: "", payment_frequency: "monthly" });
+      setLoanPreview(null);
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Error al crear solicitud");
