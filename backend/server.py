@@ -1194,9 +1194,13 @@ async def respond_to_proposal(proposal_id: str, response: LoanProposalResponse):
         # Obtener el préstamo actualizado
         loan = await db.loans.find_one({"id": proposal["loan_id"]}, {"_id": 0})
         
+        # Obtener días entre pagos según la forma de pago del préstamo
+        payment_frequency_days = loan.get("payment_frequency_days", 30)
+        
         # Crear cronograma de pagos con la nueva tasa
         for i in range(1, loan["term_months"] + 1):
-            due_date = start_date + timedelta(days=30 * i)
+            # Calcular fecha de vencimiento según la frecuencia de pago
+            due_date = start_date + timedelta(days=payment_frequency_days * i)
             schedule = PaymentSchedule(
                 loan_id=loan["id"],
                 client_id=loan["client_id"],
