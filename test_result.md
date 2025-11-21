@@ -102,7 +102,9 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: Implementar panel financiero para el administrador que muestre la utilidad mensual (intereses cobrados) y permita gestionar gastos mensuales con comparación de Gastos vs Utilidad.
+user_problem_statement: |
+  1. Implementar panel financiero para el administrador que muestre la utilidad mensual (intereses cobrados) y permita gestionar gastos mensuales con comparación de Gastos vs Utilidad.
+  2. Modificar sistema de gastos para usar dos tipos: Gastos Fijos (recurrentes cada mes) y Gastos Generales (one-time). Crear página dedicada /gastos para gestión completa.
 
 backend:
   - task: "Endpoint GET /api/admin/monthly-utility"
