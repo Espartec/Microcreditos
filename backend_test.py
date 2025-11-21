@@ -388,7 +388,8 @@ class LoanAppAPITester:
             if response and response.status_code == 200:
                 self.log_test("Delete Expense", True)
                 
-                # Verify expense was deleted by trying to delete again (should return 404)
+                # Wait a moment and verify expense was deleted by trying to delete again (should return 404)
+                time.sleep(0.5)
                 response = self.make_request('DELETE', f'admin/expenses/{created_expense_id}')
                 if response:
                     if response.status_code == 404:
