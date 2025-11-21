@@ -87,6 +87,64 @@ export default function SystemSettings({ user, onLogout }) {
     });
   };
 
+  // Funciones para Sistematización
+  const handleAddSystemFee = () => {
+    const fee = parseFloat(newSystemFee);
+    if (isNaN(fee) || fee < 0) {
+      toast.error("Ingresa un porcentaje válido");
+      return;
+    }
+    if (config.available_system_fees.includes(fee)) {
+      toast.error("Este porcentaje ya existe");
+      return;
+    }
+    setConfig({
+      ...config,
+      available_system_fees: [...config.available_system_fees, fee].sort((a, b) => a - b)
+    });
+    setNewSystemFee("");
+  };
+
+  const handleRemoveSystemFee = (fee) => {
+    if (config.available_system_fees.length <= 1) {
+      toast.error("Debe haber al menos un porcentaje disponible");
+      return;
+    }
+    setConfig({
+      ...config,
+      available_system_fees: config.available_system_fees.filter(f => f !== fee)
+    });
+  };
+
+  // Funciones para Seguro
+  const handleAddInsuranceFee = () => {
+    const fee = parseFloat(newInsuranceFee);
+    if (isNaN(fee) || fee < 0) {
+      toast.error("Ingresa un porcentaje válido");
+      return;
+    }
+    if (config.available_insurance_fees.includes(fee)) {
+      toast.error("Este porcentaje ya existe");
+      return;
+    }
+    setConfig({
+      ...config,
+      available_insurance_fees: [...config.available_insurance_fees, fee].sort((a, b) => a - b)
+    });
+    setNewInsuranceFee("");
+  };
+
+  const handleRemoveInsuranceFee = (fee) => {
+    if (config.available_insurance_fees.length <= 1) {
+      toast.error("Debe haber al menos un porcentaje disponible");
+      return;
+    }
+    setConfig({
+      ...config,
+      available_insurance_fees: config.available_insurance_fees.filter(f => f !== fee)
+    });
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
