@@ -14,16 +14,24 @@ class ProposalStatus(str, Enum):
     REJECTED = "rejected"
 
 # Modelos para configuración del sistema
+class PaymentFrequency(BaseModel):
+    id: str
+    name: str  # "Diario", "Día de por medio", "Semanal", "Mensual"
+    days: int  # 1, 2, 7, 30
+    active: bool = True
+
 class SystemConfig(BaseModel):
     id: str
     default_interest_rate: float
     available_interest_rates: List[float]
+    payment_frequencies: List[PaymentFrequency] = []
     updated_at: datetime
     updated_by: str
 
 class SystemConfigUpdate(BaseModel):
     default_interest_rate: float
     available_interest_rates: List[float]
+    payment_frequencies: Optional[List[dict]] = None
 
 # Modelos para gestión de usuarios
 class UserUpdate(BaseModel):
