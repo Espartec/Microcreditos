@@ -248,18 +248,152 @@ export default function SystemSettings({ user, onLogout }) {
               </p>
             </div>
 
-            {/* Save Button */}
-            <div className="pt-6 border-t">
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full bg-blue-600 hover:bg-blue-700"
-                data-testid="save-config-btn"
-              >
-                <Save className="w-4 h-4 mr-2" />
-                {saving ? "Guardando..." : "Guardar Configuración"}
-              </Button>
+          </CardContent>
+        </Card>
+
+        {/* Sistematización */}
+        <Card className="glass-card mt-6">
+          <CardHeader>
+            <CardTitle>Configuración de Sistematización</CardTitle>
+            <CardDescription>
+              Porcentaje de cargo por sistematización que se suma automáticamente al préstamo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Default System Fee */}
+            <div className="space-y-2">
+              <Label htmlFor="default_system_fee">Porcentaje de Sistematización Por Defecto (%)</Label>
+              <Input
+                id="default_system_fee"
+                type="number"
+                step="0.1"
+                value={config.default_system_fee}
+                onChange={(e) => setConfig({ ...config, default_system_fee: parseFloat(e.target.value) })}
+                className="max-w-xs"
+              />
+              <p className="text-sm text-gray-500">
+                Este porcentaje se aplicará automáticamente al monto del préstamo
+              </p>
             </div>
+
+            {/* Available System Fees */}
+            <div className="space-y-4">
+              <Label>Porcentajes Disponibles (%)</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {config.available_system_fees.map((fee) => (
+                  <div
+                    key={fee}
+                    className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200 rounded-lg"
+                  >
+                    <span className="font-semibold text-purple-900">{fee}%</span>
+                    <button
+                      onClick={() => handleRemoveSystemFee(fee)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New System Fee */}
+              <div className="flex space-x-2 max-w-md">
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="Nuevo porcentaje (%)"
+                  value={newSystemFee}
+                  onChange={(e) => setNewSystemFee(e.target.value)}
+                />
+                <Button
+                  onClick={handleAddSystemFee}
+                  variant="outline"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Seguro */}
+        <Card className="glass-card mt-6">
+          <CardHeader>
+            <CardTitle>Configuración de Seguro</CardTitle>
+            <CardDescription>
+              Porcentaje de cargo por seguro que se suma automáticamente al préstamo
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Default Insurance Fee */}
+            <div className="space-y-2">
+              <Label htmlFor="default_insurance_fee">Porcentaje de Seguro Por Defecto (%)</Label>
+              <Input
+                id="default_insurance_fee"
+                type="number"
+                step="0.1"
+                value={config.default_insurance_fee}
+                onChange={(e) => setConfig({ ...config, default_insurance_fee: parseFloat(e.target.value) })}
+                className="max-w-xs"
+              />
+              <p className="text-sm text-gray-500">
+                Este porcentaje se aplicará automáticamente al monto del préstamo
+              </p>
+            </div>
+
+            {/* Available Insurance Fees */}
+            <div className="space-y-4">
+              <Label>Porcentajes Disponibles (%)</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {config.available_insurance_fees.map((fee) => (
+                  <div
+                    key={fee}
+                    className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-lg"
+                  >
+                    <span className="font-semibold text-emerald-900">{fee}%</span>
+                    <button
+                      onClick={() => handleRemoveInsuranceFee(fee)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Add New Insurance Fee */}
+              <div className="flex space-x-2 max-w-md">
+                <Input
+                  type="number"
+                  step="0.1"
+                  placeholder="Nuevo porcentaje (%)"
+                  value={newInsuranceFee}
+                  onChange={(e) => setNewInsuranceFee(e.target.value)}
+                />
+                <Button
+                  onClick={handleAddInsuranceFee}
+                  variant="outline"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Agregar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Save All Button */}
+        <Card className="glass-card mt-6">
+          <CardContent className="pt-6">
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-lg"
+            >
+              <Save className="w-5 h-5 mr-2" />
+              {saving ? "Guardando..." : "Guardar Toda la Configuración"}
+            </Button>
           </CardContent>
         </Card>
 
