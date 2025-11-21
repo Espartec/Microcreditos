@@ -83,11 +83,11 @@ export default function LenderClientsPage({ user, onLogout }) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate("/users")}
-              data-testid="back-to-users-btn"
+              onClick={() => navigate(-1)}
+              data-testid="back-btn"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Volver a Usuarios
+              Volver
             </Button>
             <div className="flex items-center space-x-2">
               <Users className="w-6 h-6 text-blue-600" />
