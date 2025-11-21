@@ -136,7 +136,25 @@ export default function LenderDashboard({ user, onLogout }) {
 
         {/* Loans List */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Préstamos Otorgados</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Préstamos Otorgados ({filteredLoans.length})
+            </h2>
+          </div>
+          
+          {/* Buscador */}
+          {loans.length > 0 && (
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                type="text"
+                placeholder="Buscar por cliente, número de crédito, monto..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -146,8 +164,14 @@ export default function LenderDashboard({ user, onLogout }) {
                 <p className="text-gray-600">No has otorgado préstamos aún</p>
               </CardContent>
             </Card>
+          ) : filteredLoans.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-gray-600">No se encontraron préstamos con "{searchTerm}"</p>
+              </CardContent>
+            </Card>
           ) : (
-            loans.map((loan) => (
+            filteredLoans.map((loan) => (
               <Card
                 key={loan.id}
                 className="loan-card"
