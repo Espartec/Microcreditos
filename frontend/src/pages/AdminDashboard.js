@@ -343,59 +343,83 @@ export default function AdminDashboard({ user, onLogout }) {
 
         {/* Active Loans */}
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Préstamos Activos</h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Préstamos Activos {activeLoans.length > 0 && `(${activeLoans.length})`}
+            </h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowActiveLoans(!showActiveLoans)}
+              className="flex items-center space-x-2"
+            >
+              {showActiveLoans ? (
+                <>
+                  <X className="w-4 h-4" />
+                  <span>Ocultar</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Mostrar ({activeLoans.length})</span>
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          {activeLoans.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <p className="text-gray-600">No hay préstamos activos</p>
-              </CardContent>
-            </Card>
-          ) : (
-            activeLoans.map((loan) => (
-              <Card
-                key={loan.id}
-                className="loan-card"
-                onClick={() => navigate(`/client/${loan.client_id}`)}
-                data-testid={`active-loan-${loan.id}`}
-              >
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-xl">${loan.amount.toLocaleString()}</CardTitle>
-                      <CardDescription className="mt-1">
-                        Cliente: {loan.client_name}
-                      </CardDescription>
-                    </div>
-                    <span className="status-badge status-active">Activo</span>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">Cuota Mensual</p>
-                      <p className="font-semibold text-gray-900">${loan.monthly_payment}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Plazo</p>
-                      <p className="font-semibold text-gray-900">{loan.term_months} meses</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Prestamista</p>
-                      <p className="font-semibold text-gray-900">{loan.lender_name}</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600">Total</p>
-                      <p className="font-semibold text-gray-900">${loan.total_amount.toLocaleString()}</p>
-                    </div>
-                  </div>
+        {showActiveLoans && (
+          <div className="space-y-4 mb-8">
+            {activeLoans.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-gray-600">No hay préstamos activos</p>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
+            ) : (
+              activeLoans.map((loan) => (
+                <Card
+                  key={loan.id}
+                  className="loan-card"
+                  onClick={() => navigate(`/client/${loan.client_id}`)}
+                  data-testid={`active-loan-${loan.id}`}
+                >
+                  <CardHeader>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-xl">${loan.amount.toLocaleString()}</CardTitle>
+                        <CardDescription className="mt-1">
+                          Cliente: {loan.client_name}
+                        </CardDescription>
+                      </div>
+                      <span className="status-badge status-active">Activo</span>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-600">Cuota Mensual</p>
+                        <p className="font-semibold text-gray-900">${loan.monthly_payment}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Plazo</p>
+                        <p className="font-semibold text-gray-900">{loan.term_months} meses</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Prestamista</p>
+                        <p className="font-semibold text-gray-900">{loan.lender_name}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">Total</p>
+                        <p className="font-semibold text-gray-900">${loan.total_amount.toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Financial Panel */}
         <div className="mt-12 mb-8">
