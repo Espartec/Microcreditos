@@ -1012,6 +1012,43 @@ async def toggle_user_active(user_id: str):
     status_text = "activado" if new_status else "desactivado"
     return {"message": f"Usuario {status_text} exitosamente", "active": new_status}
 
+@api_router.delete("/users/{user_id}/permanent")
+async def delete_user_permanently(user_id: str):
+    """Eliminar definitivamente un usuario SOLO si está inactivo"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    # Verificar que el usuario esté inactivo
+    if user.get("active", True):
+        raise HTTPException(
+            status_code=400, 
+            detail="Solo se pueden eliminar definitivamente usuarios inactivos. Desactiva el usuario primero."
+        )
+    
+    # Verificar que no tenga préstamos activos
+    active_loans = await db.loans.count_documents({
+        "$or": [
+            {"client_id": user_id},
+            {"lender_id": user_id}
+        ],
+        "status": {"$in": [LoanStatus.ACTIVE, LoanStatus.PENDING, LoanStatus.APPROVED]}
+    })
+    
+    if active_loans > 0:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"No se puede eliminar. El usuario tiene {active_loans} préstamo(s) activo(s) o pendiente(s)."
+        )
+    
+    # Eliminar usuario permanentemente
+    result = await db.users.delete_one({"id": user_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    return {"message": f"Usuario eliminado definitivamente"}
+
 @api_router.get("/users/{lender_id}/assigned-loans")
 async def get_lender_assigned_loans(lender_id: str):
     """Obtiene todos los préstamos asignados a un prestamista"""
