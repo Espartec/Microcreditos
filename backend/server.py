@@ -170,37 +170,62 @@ def create_token(user_id: str) -> str:
     to_encode = {"sub": user_id, "exp": expire}
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-def calculate_loan(amount: int, interest_rate: float, term_months: int) -> dict:
-    monthly_rate = interest_rate / 100 / 12
-    if monthly_rate == 0:
-        monthly_payment = amount / term_months
+def calculate_loan(amount: int, interest_rate: float, term_months: int, payment_frequency_days: int = 30) -> dict:
+    """
+    Calcula un préstamo con frecuencia de pago flexible
+    
+    Args:
+        amount: Monto del préstamo
+        interest_rate: Tasa de interés anual (%)
+        term_months: Plazo en meses
+        payment_frequency_days: Días entre cada pago (1=diario, 2=día por medio, 7=semanal, 30=mensual)
+    
+    Returns:
+        dict con payment_amount, total_payments, total_amount, total_interest, schedule
+    """
+    # Calcular tasa de interés por período
+    annual_rate = interest_rate / 100
+    
+    # Calcular número total de pagos según la frecuencia
+    days_in_period = term_months * 30  # Aproximadamente días totales
+    total_payments = days_in_period // payment_frequency_days
+    
+    # Tasa de interés por período de pago
+    period_rate = annual_rate * (payment_frequency_days / 365)
+    
+    if period_rate == 0:
+        payment_amount = amount / total_payments
     else:
-        monthly_payment = amount * (monthly_rate * (1 + monthly_rate)**term_months) / ((1 + monthly_rate)**term_months - 1)
+        # Fórmula de amortización ajustada por período
+        payment_amount = amount * (period_rate * (1 + period_rate)**total_payments) / ((1 + period_rate)**total_payments - 1)
     
     # Redondear a enteros
-    monthly_payment = round(monthly_payment)
-    total_amount = monthly_payment * term_months
+    payment_amount = round(payment_amount)
+    total_amount = payment_amount * total_payments
     total_interest = total_amount - amount
     
+    # Generar schedule de pagos
     schedule = []
     balance = amount
-    for i in range(1, term_months + 1):
-        interest_payment = balance * monthly_rate
-        principal_payment = monthly_payment - interest_payment
+    for i in range(1, total_payments + 1):
+        interest_payment = balance * period_rate
+        principal_payment = payment_amount - interest_payment
         balance -= principal_payment
         schedule.append({
             "payment_number": i,
-            "payment": monthly_payment,
+            "payment": payment_amount,
             "principal": round(principal_payment),
             "interest": round(interest_payment),
             "balance": round(max(balance, 0))
         })
     
     return {
-        "monthly_payment": monthly_payment,
+        "payment_amount": payment_amount,
+        "total_payments": total_payments,
         "total_amount": total_amount,
         "total_interest": total_interest,
-        "schedule": schedule
+        "schedule": schedule,
+        "payment_frequency_days": payment_frequency_days
     }
 
 # Auth Routes
