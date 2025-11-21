@@ -434,9 +434,9 @@ async def create_payment(payment_data: PaymentCreate, client_id: str):
     payment_doc["payment_date"] = payment_doc["payment_date"].isoformat()
     await db.payments.insert_one(payment_doc)
     
-    # Verificar si el pago cubre todo el saldo restante o más
-    if payment_amount >= total_pending:
-        # Pago total: marcar todas las cuotas como pagadas
+    # Verificar si el pago cubre todo el saldo restante (pago exacto)
+    if payment_amount == total_pending:
+        # Pago total exacto: marcar todas las cuotas como pagadas
         await db.payment_schedules.update_many(
             {"loan_id": payment_data.loan_id, "status": PaymentStatus.PENDING},
             {"$set": {
